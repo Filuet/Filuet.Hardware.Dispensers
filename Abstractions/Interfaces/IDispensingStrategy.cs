@@ -1,11 +1,16 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models;
-using Filuet.ASC.Kiosk.OnBoard.Ordering.Abstractions;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System.Collections.Generic;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Interfaces
+namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
     public interface IDispensingStrategy
     {
-        IEnumerable<DispenseCommand> BuildDispensingChain(IEnumerable<OrderItem> cart, PoG planogram);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="cart">Product UId with quantity</param>
+        /// <param name="planogram"></param>
+        /// <returns></returns>
+        IEnumerable<DispenseCommand> BuildDispensingChain(Dictionary<string, ushort> cart, PoG planogram);
     }
 }

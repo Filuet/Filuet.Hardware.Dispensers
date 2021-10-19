@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
     /// A command for <see cref="ICompositeDispenser"/> to dispense a product
@@ -11,7 +11,7 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
     {
         public CompositDispenseAddress Address { get; private set; }
 
-        public uint Quantity { get; private set; }
+        public ushort Quantity { get; private set; }
 
         /// <summary>
         /// 
@@ -19,7 +19,7 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
         /// <param name="address"></param>
         /// <param name="quantity">Quantity to be extracted</param>
         /// <returns></returns>
-        public static DispenseCommand Create(CompositDispenseAddress address, uint quantity)
+        public static DispenseCommand Create(CompositDispenseAddress address, ushort quantity)
         {
             if (quantity == 0)
                 throw new ArgumentException("Quantity to dispense is mandatory");

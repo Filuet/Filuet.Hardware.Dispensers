@@ -5,6 +5,16 @@ VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filuet.Hardware.Dispensers.Abstractions", "Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj", "{77CF1602-09B6-4519-9720-876C4C4D99C6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filuet.Hardware.Dispensers.Core", "Core\Filuet.Hardware.Dispensers.Core.csproj", "{12961F3F-BB6D-4023-A3BB-4A643703260B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filuet.Hardware.Dispensers.Common", "Common\Filuet.Hardware.Dispensers.Common.csproj", "{A99524D9-04DC-448C-B626-CF79A7D96181}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sdk", "sdk", "{5DF6B96A-301A-469A-A9A9-73CFCA2BD260}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "jofemar", "jofemar", "{5ED7C579-78C2-4C69-B398-DA16BAC84765}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus", "Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj", "{419AFBCA-437B-4ECB-B089-755B0863DE28}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +25,25 @@ Global
 		{77CF1602-09B6-4519-9720-876C4C4D99C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77CF1602-09B6-4519-9720-876C4C4D99C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77CF1602-09B6-4519-9720-876C4C4D99C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12961F3F-BB6D-4023-A3BB-4A643703260B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12961F3F-BB6D-4023-A3BB-4A643703260B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12961F3F-BB6D-4023-A3BB-4A643703260B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12961F3F-BB6D-4023-A3BB-4A643703260B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A99524D9-04DC-448C-B626-CF79A7D96181}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A99524D9-04DC-448C-B626-CF79A7D96181}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A99524D9-04DC-448C-B626-CF79A7D96181}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A99524D9-04DC-448C-B626-CF79A7D96181}.Release|Any CPU.Build.0 = Release|Any CPU
+		{419AFBCA-437B-4ECB-B089-755B0863DE28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{419AFBCA-437B-4ECB-B089-755B0863DE28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{419AFBCA-437B-4ECB-B089-755B0863DE28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{419AFBCA-437B-4ECB-B089-755B0863DE28}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5ED7C579-78C2-4C69-B398-DA16BAC84765} = {5DF6B96A-301A-469A-A9A9-73CFCA2BD260}
+		{419AFBCA-437B-4ECB-B089-755B0863DE28} = {5ED7C579-78C2-4C69-B398-DA16BAC84765}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {462DD78B-E1EB-44CF-98FE-3FC59BEA5DBD}

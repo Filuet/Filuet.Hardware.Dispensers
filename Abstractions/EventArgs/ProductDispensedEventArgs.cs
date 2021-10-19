@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions
+namespace Filuet.Hardware.Dispensers.Abstractions
 {
     /// <summary>
     /// When dispensing process is complete (all products were dispensed)

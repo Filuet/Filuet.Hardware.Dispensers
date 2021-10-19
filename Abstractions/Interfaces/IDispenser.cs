@@ -1,16 +1,15 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Common.Abstractions.Hardware;
-using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System;
 using System.Collections.Generic;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions
+namespace Filuet.Hardware.Dispensers.Abstractions
 {
     /// <summary>
     /// Single dispensing unit
     /// </summary>
     public interface IDispenser
     {
-        event EventHandler<DeviceTestEventArgs> onTest;
+        event EventHandler<DispenserTestEventArgs> onTest;
 
         uint Id { get; }
 

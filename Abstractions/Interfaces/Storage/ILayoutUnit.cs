@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Interfaces
+namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
     public interface ILayoutUnit
     {

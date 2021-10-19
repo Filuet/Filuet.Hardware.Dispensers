@@ -1,7 +1,7 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Interfaces;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Interfaces;
 using System;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     public abstract class Belt : LayoutUnit, IBelt
     {

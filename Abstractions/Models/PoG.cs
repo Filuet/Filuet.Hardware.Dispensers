@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
     /// Planogram
@@ -15,7 +15,7 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
         public IEnumerable<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
-            => new PoG { Products = JsonConvert.DeserializeObject<IEnumerable<PoGProduct>>(serialized) };
+            => new PoG { Products = JsonSerializer.Deserialize<IEnumerable<PoGProduct>>(serialized) };
 
         [JsonIgnore]
         public IEnumerable<CompositDispenseAddress> Addresses
@@ -24,10 +24,10 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
 
     public class PoGProduct
     {
-        [JsonProperty("productUid")]
+        [JsonPropertyName("productUid")]
         public string ProductUid { get; private set; }
 
-        [JsonProperty("machines")]
+        [JsonPropertyName("machines")]
         public IEnumerable<PoGMachine> Machines { get; private set; }
 
         [JsonIgnore]
@@ -37,10 +37,10 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
 
     public class PoGMachine
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public uint MachineId { get; private set; }
 
-        [JsonProperty("addresses")]
+        [JsonPropertyName("addresses")]
         public IEnumerable<string> Addresses { get; private set; }
     }
 }

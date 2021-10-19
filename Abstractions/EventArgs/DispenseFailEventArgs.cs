@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions
+namespace Filuet.Hardware.Dispensers.Abstractions
 {
     public class DispenseFailEventArgs : EventArgs
     {

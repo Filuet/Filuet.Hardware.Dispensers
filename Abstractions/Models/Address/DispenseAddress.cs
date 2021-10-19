@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
     /// Dispensing address
     /// </summary>
     public abstract class DispenseAddress
     {
-        [JsonProperty("address")]
+        [JsonPropertyName("address")]
         public string Address { get; protected set; }
 
         public override string ToString() => Address;

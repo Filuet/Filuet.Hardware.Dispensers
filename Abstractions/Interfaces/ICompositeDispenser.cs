@@ -1,9 +1,7 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Common.Abstractions.Hardware;
-using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models;
-using Filuet.ASC.Kiosk.OnBoard.Ordering.Abstractions;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions
+namespace Filuet.Hardware.Dispensers.Abstractions
 {
     /// <summary>
     /// Composite product dispenser
@@ -15,9 +13,9 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions
 
         event EventHandler<ProductDispensedEventArgs> OnDispensingFinished;
 
-        event EventHandler<DeviceTestEventArgs> OnTest;
+        event EventHandler<DispenserTestEventArgs> OnTest;
 
-        void Dispense(params OrderItem[] items);
+        void Dispense(params (string productUid, ushort quantity)[] items);
 
         void CheckChannel(CompositDispenseAddress address);
     }

@@ -1,7 +1,7 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Interfaces
+namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
     public interface ILayoutBuilderMachine<TTray, TBelt>
         where TTray : Tray, new()

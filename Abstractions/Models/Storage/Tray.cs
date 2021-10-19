@@ -1,10 +1,10 @@
-﻿using Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Interfaces;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     public abstract class Tray : LayoutUnit, ITray
     {

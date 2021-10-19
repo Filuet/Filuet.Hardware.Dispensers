@@ -1,17 +1,19 @@
-﻿using Newtonsoft.Json;
-using System;
-namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
+﻿using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
     /// Issuance address
     /// </summary>
     public class CompositDispenseAddress : DispenseAddress
     {
-        [JsonProperty("vendMachineId")]
+        [JsonPropertyName("vendMachineId")]
         public uint VendingMachineID { get; private set; }
 
         public static implicit operator String(CompositDispenseAddress address)
-            => JsonConvert.SerializeObject(address);
+            => JsonSerializer.Serialize(address);
 
         public static CompositDispenseAddress Create(uint vendingMachineId, string address)
         {
@@ -24,6 +26,6 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Abstractions.Models
         [JsonIgnore]
         public bool IsAddressAvailable { get; set; }
 
-        public override string ToString() => JsonConvert.SerializeObject(this);
+        public override string ToString() => JsonSerializer.Serialize(this);
     }
 }
