@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
         where TTray : Tray, new()
         where TBelt : Belt, new()
     {
-        ILayoutBuilderTray<TTray, TBelt> AddTray(uint number);
+        ILayoutBuilderTray<TTray, TBelt> AddTray(ushort number);
 
         ILayoutBuilder CommitMachine();
     }
@@ -21,14 +21,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
         /// </summary>
         /// <param name="number">Tray number</param>
         /// <returns></returns>
-        ILayoutBuilderTray<TTray, TBelt> AddBelt(uint number);
+        ILayoutBuilderTray<TTray, TBelt> AddBelt(ushort number);
 
         ILayoutBuilderMachine<TTray, TBelt> CommitTray();
     }
 
     public interface ILayoutBuilder
     {
-        ILayoutBuilderMachine<TTray, TBelt> AddMachine<TMachine, TTray, TBelt>(uint number)
+        ILayoutBuilderMachine<TTray, TBelt> AddMachine<TMachine, TTray, TBelt>(ushort number)
             where TMachine : Machine, new()
             where TTray : Tray, new()
             where TBelt : Belt, new();

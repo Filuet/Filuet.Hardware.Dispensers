@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -25,10 +26,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     public class PoGProduct
     {
         [JsonPropertyName("productUid")]
-        public string ProductUid { get; private set; }
+        public string ProductUid { get; set; }
 
         [JsonPropertyName("machines")]
-        public IEnumerable<PoGMachine> Machines { get; private set; }
+        public IEnumerable<PoGMachine> Machines { get; set; }
 
         [JsonIgnore]
         public IEnumerable<CompositDispenseAddress> Addresses
@@ -38,9 +39,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     public class PoGMachine
     {
         [JsonPropertyName("id")]
-        public uint MachineId { get; private set; }
+        public uint MachineId { get; set; }
 
         [JsonPropertyName("addresses")]
-        public IEnumerable<string> Addresses { get; private set; }
+        public IEnumerable<string> Addresses { get; set; }
     }
 }

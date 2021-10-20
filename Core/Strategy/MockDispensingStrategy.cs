@@ -17,12 +17,13 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
         {
             foreach (var item in cart)
             {
-                CompositDispenseAddress address = planogram[item.Key].Addresses.FirstOrDefault();
-
-                if (address == null)
+                IEnumerable<IBelt> activeBelts = _layout.GetBelts(planogram[item.Key].Addresses, true);
+                if (!activeBelts.Any())
                     throw new InvalidOperationException($"Unable to extract {item.Key}: no address");
 
-                yield return DispenseCommand.Create(address, item.Value);
+                // find the best belt to extract
+
+                yield return DispenseCommand.Create(... , item.Value);
             }
         }
 

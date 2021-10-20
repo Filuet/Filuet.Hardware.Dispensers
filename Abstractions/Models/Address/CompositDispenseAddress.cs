@@ -20,12 +20,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             if (string.IsNullOrWhiteSpace(address))
                 throw new ArgumentException("Address is mandatory");
 
-            return new CompositDispenseAddress { VendingMachineID = vendingMachineId, Address = address.Trim() };
+            return new CompositDispenseAddress { VendingMachineID = vendingMachineId, Address = $"{vendingMachineId}/{address.Trim()}" };
         }
 
-        [JsonIgnore]
-        public bool IsAddressAvailable { get; set; }
-
-        public override string ToString() => JsonSerializer.Serialize(this);
+        public override string ToString() => Address;
     }
 }

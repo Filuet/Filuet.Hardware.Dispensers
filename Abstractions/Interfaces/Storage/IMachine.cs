@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
     {
         IEnumerable<ITray> Trays { get; }
 
-        ITray AddTray<TTray>(uint number)
+        ITray AddTray<TTray>(ushort number)
             where TTray : Tray, new();
     }
 }

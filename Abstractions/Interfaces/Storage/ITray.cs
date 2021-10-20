@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
     {
         IEnumerable<IBelt> Belts { get; }
 
-        IBelt AddBelt<TBelt>(uint number)
+        IBelt AddBelt<TBelt>(ushort number)
             where TBelt : Belt, new();
     }
 }

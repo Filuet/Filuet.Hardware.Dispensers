@@ -12,7 +12,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     {
         public IEnumerable<ITray> Trays { get => _trays; } 
 
-        public ITray AddTray<TTray>(uint number)
+        public ITray AddTray<TTray>(ushort number)
             where TTray: Tray, new()
         {
             TTray result = default;

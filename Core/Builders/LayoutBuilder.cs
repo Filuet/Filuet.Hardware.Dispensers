@@ -10,7 +10,7 @@ namespace Filuet.Hardware.Dispensers.Core.Builders
     {
         private IList<IMachine> _machines = new List<IMachine>();
 
-        public ILayoutBuilderMachine<TTray, TBelt> AddMachine<TMachine, TTray, TBelt>(uint number)
+        public ILayoutBuilderMachine<TTray, TBelt> AddMachine<TMachine, TTray, TBelt>(ushort number)
             where TMachine : Machine, new()
             where TTray : Tray, new()
             where TBelt : Belt, new()
@@ -19,7 +19,7 @@ namespace Filuet.Hardware.Dispensers.Core.Builders
             return new LayoutBuilderMachine<TTray, TBelt>(this, machine);
         }
 
-        private IMachine CreateMachine<TMachine>(uint number)
+        private IMachine CreateMachine<TMachine>(ushort number)
             where TMachine : Machine, new()
         {
             IMachine machine = _machines.SingleOrDefault(x => x.Number == number);

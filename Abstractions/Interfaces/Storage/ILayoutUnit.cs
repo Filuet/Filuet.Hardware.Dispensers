@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
+﻿namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
     public interface ILayoutUnit
     {
         /// <summary>
         /// Index number
         /// </summary>
-        uint Number { get; }
+        ushort Number { get; }
 
         bool IsActive { get; }
 
-        void SetNumber(uint number);
+        void SetNumber(ushort number);
 
         void SetActive(bool active);
     }

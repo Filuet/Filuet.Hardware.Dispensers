@@ -12,7 +12,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         public IEnumerable<IBelt> Belts { get => _belts; }
 
-        public IBelt AddBelt<TBelt>(uint number)
+        public IBelt AddBelt<TBelt>(ushort number)
             where TBelt : Belt, new()
         {
             IBelt result = default;

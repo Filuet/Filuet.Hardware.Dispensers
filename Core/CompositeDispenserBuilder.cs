@@ -26,13 +26,21 @@ namespace Filuet.Hardware.Dispensers.Core
             return this;
         }
 
+
+        public CompositeDispenserBuilder AddLayout(ILayout layout)
+        {
+            _layout = layout;
+            return this;
+        }
+
         public ICompositeDispenser Build()
         {
-            return new CompositeDispenser(_dispensers, _strategy, _planogram);
+            return new CompositeDispenser(_dispensers, _strategy, _layout, _planogram);
         }
 
         private IEnumerable<IDispenser> _dispensers;
         private IDispensingStrategy _strategy;
         private PoG _planogram;
+        private ILayout _layout;
     }
 }

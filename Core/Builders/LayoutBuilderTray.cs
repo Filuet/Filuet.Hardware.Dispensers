@@ -24,13 +24,13 @@ namespace Filuet.Hardware.Dispensers.Core.Builders
             _activeTray = activeTray;
         }
 
-        public ILayoutBuilderTray<TTray, TBelt> AddBelt(uint number)
+        public ILayoutBuilderTray<TTray, TBelt> AddBelt(ushort number)
         {
             IBelt belt = CreateBelt(number);
             return this; 
         }
 
-        private IBelt CreateBelt(uint number)
+        private IBelt CreateBelt(ushort number)
         {
             IBelt belt = _activeTray.Belts.SingleOrDefault(x => x.Number == number);
             if (belt == null)

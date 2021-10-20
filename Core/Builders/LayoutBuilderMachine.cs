@@ -24,13 +24,13 @@ namespace Filuet.Hardware.Dispensers.Core.Builders
             _activeMachine = activeMachine;
         }
 
-        public ILayoutBuilderTray<TTray, TBelt> AddTray(uint number)
+        public ILayoutBuilderTray<TTray, TBelt> AddTray(ushort number)
         {
             ITray tray = CreateTray(number);
             return new LayoutBuilderTray<TTray, TBelt>(this, tray);
         }
 
-        private ITray CreateTray(uint number)
+        private ITray CreateTray(ushort number)
         {
             ITray tray = _activeMachine.Trays.SingleOrDefault(x => x.Number == number);
             if (tray == null)
