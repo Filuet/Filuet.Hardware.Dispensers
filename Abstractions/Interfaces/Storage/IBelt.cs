@@ -1,6 +1,8 @@
-﻿namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
+
+namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
     public interface IBelt : ILayoutUnit {
-        string Address { get; }
+        DispensingRoute Address { get; }
     }
 }

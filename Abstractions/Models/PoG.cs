@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using Filuet.Hardware.CashAcceptors.Abstractions.Converters;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -16,32 +16,35 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
-            => new PoG { Products = JsonSerializer.Deserialize<IEnumerable<PoGProduct>>(serialized) };
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions { };
+            options.Converters.Add(new DispensingRouteConverter());
+
+            return new PoG { Products = JsonSerializer.Deserialize<IEnumerable<PoGProduct>>(serialized, options) };
+        }
 
         [JsonIgnore]
-        public IEnumerable<CompositDispenseAddress> Addresses
-            => Products.SelectMany(x => x.Addresses);
+        public IEnumerable<DispensingRoute> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Route));
     }
 
     public class PoGProduct
     {
-        [JsonPropertyName("productUid")]
+        [JsonPropertyName("product")]
         public string ProductUid { get; set; }
 
-        [JsonPropertyName("machines")]
-        public IEnumerable<PoGMachine> Machines { get; set; }
+        [JsonPropertyName("routes")]
+        public IEnumerable<PoGRoute> Routes { get; set; }
 
         [JsonIgnore]
-        public IEnumerable<CompositDispenseAddress> Addresses
-            => Machines.SelectMany(x => x.Addresses.Select(a => CompositDispenseAddress.Create(x.MachineId, a)));
+        public IEnumerable<DispensingRoute> Addresses => Routes.Select(x => x.Route);
     }
 
-    public class PoGMachine
+    public class PoGRoute
     {
-        [JsonPropertyName("id")]
-        public uint MachineId { get; set; }
+        [JsonPropertyName("r")]
+        public DispensingRoute Route { get; set; }
 
-        [JsonPropertyName("addresses")]
-        public IEnumerable<string> Addresses { get; set; }
+        [JsonPropertyName("q")]
+        public ushort Quantity { get; set; }
     }
 }

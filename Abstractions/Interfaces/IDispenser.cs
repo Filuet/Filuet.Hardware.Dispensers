@@ -15,7 +15,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         void Test();
 
-        bool Dispense(DispenseAddress address, uint quantity);
+        bool Dispense(DispensingAddress address, uint quantity);
 
         bool IsAddressAvailable<T>(T address) where T : new();
 

@@ -17,6 +17,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         void Dispense(params (string productUid, ushort quantity)[] items);
 
-        void CheckChannel(CompositDispenseAddress address);
+        void CheckChannel(DispensingRoute address);
     }
 }

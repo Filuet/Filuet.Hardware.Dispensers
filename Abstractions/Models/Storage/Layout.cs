@@ -15,7 +15,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IBelt GetBelt(string address)
             => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).FirstOrDefault(x => x.Address == address);
 
-        public IEnumerable<IBelt> GetBelts(IEnumerable<CompositDispenseAddress> addresses, bool activeOnly = true)
+        public IEnumerable<IBelt> GetBelts(IEnumerable<DispensingRoute> addresses, bool activeOnly = true)
             => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).Where(x => addresses.Any(a => a == x.Address) && (!activeOnly || x.IsActive));
 
         public IMachine AddMachine<TMachine>(ushort number)

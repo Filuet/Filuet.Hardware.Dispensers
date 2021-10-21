@@ -39,7 +39,7 @@ namespace PoC
 
                                 return result;
                             })
-                        .AddPlanogram(() => PoG.Read("[{\"productUid\":\"0141\",\"machines\":[{\"id\":1,\"addresses\":[\"18/0\",\"16/3\"]}]},{\"productUid\":\"0145\",\"machines\":[{\"id\":2, \"addresses\":[\"18/2\",\"16/0\"]}]}]"))
+                        .AddPlanogram(() => PoG.Read("[ { \"product\": \"0141\", \"routes\":[ { \"r\": \"1/18/0\", \"q\": 5 }, { \"r\": \"1/16/3\", \"q\" : 3} ] }, { \"product\": \"0145\", \"routes\":[ { \"r\": \"2/18/2\", 1} { \"r\": \"2/16/0\", 5} ] } ]"))
                         .AddLayout(sp.GetRequiredService<ILayout>()).Build();
                 })
                 .AddLayout((sp) =>

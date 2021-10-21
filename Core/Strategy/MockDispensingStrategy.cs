@@ -21,9 +21,7 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
                 if (!activeBelts.Any())
                     throw new InvalidOperationException($"Unable to extract {item.Key}: no address");
 
-                // find the best belt to extract
-
-                yield return DispenseCommand.Create(... , item.Value);
+                yield return DispenseCommand.Create(activeBelts.First().Address, item.Value);
             }
         }
 

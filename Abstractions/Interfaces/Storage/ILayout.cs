@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
     {
         IBelt GetBelt(string address);
 
-        IEnumerable<IBelt> GetBelts(IEnumerable<CompositDispenseAddress> addresses, bool activeOnly = true);
+        IEnumerable<IBelt> GetBelts(IEnumerable<DispensingRoute> addresses, bool activeOnly = true);
 
         IEnumerable<IMachine> Machines { get; }
 

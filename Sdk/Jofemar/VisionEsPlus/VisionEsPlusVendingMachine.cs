@@ -25,7 +25,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             onTest?.Invoke(this, new DispenserTestEventArgs { Severity = testResult.severity, Message = testResult.message });
         }
 
-        public bool Dispense(DispenseAddress address, uint quantity)   
+        public bool Dispense(DispensingAddress address, uint quantity)   
         {
             var t = _machineAdapter.Status(false);
             bool result = _machineAdapter.DispenseProduct(address, quantity);
@@ -35,9 +35,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         public bool IsAddressAvailable<T>(T address) where T : new()
-            => _machineAdapter.IsBeltAvailable((address as DispenseAddress));
+            => _machineAdapter.IsBeltAvailable((address as DispensingAddress));
 
-        public IEnumerable<CompositDispenseAddress> AreAddressesAvailable1(IEnumerable<CompositDispenseAddress> addresses)
+        public IEnumerable<DispensingRoute> AreAddressesAvailable1(IEnumerable<DispensingRoute> addresses)
         {
             foreach (var a in addresses)
                 if (IsAddressAvailable(a))

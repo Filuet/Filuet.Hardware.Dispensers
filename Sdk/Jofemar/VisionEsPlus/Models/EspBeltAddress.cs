@@ -8,7 +8,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models
 
         public int Belt { get; internal set; }
 
-        public static implicit operator EspBeltAddress(DispenseAddress address)
+        public static implicit operator EspBeltAddress(DispensingAddress address)
         {
             if (address.Address == null || !address.Address.Contains("/"))
                 return null;

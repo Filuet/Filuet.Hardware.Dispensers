@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     {
         public Tray Tray { get; private set; }
 
-        public abstract string Address { get; }
+        public virtual DispensingRoute Address { get; }
 
         internal void SetTray(Tray tray)
         {

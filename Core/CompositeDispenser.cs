@@ -30,7 +30,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 throw new ArgumentException("There is a poor match between the planogram and the layout");
         }
 
-        public void CheckChannel(CompositDispenseAddress address)
+        public void CheckChannel(DispensingRoute address)
         {
             throw new NotImplementedException();
         }
@@ -61,9 +61,9 @@ namespace Filuet.Hardware.Dispensers.Core
                 if (dispenser == null)
                     continue;
 
-                IEnumerable<CompositDispenseAddress> available =
+                IEnumerable<DispensingRoute> available =
                     dispenser.AreAddressesAvailable(machine.Trays.SelectMany(x => x.Belts)
-                    .Select(x => CompositDispenseAddress.Create(machine.Number, x.Address)));
+                    .Select(x => DispensingRoute.Create(machine.Number, x.Address)));
 
                 foreach (var t in machine.Trays)
                     foreach (var b in t.Belts)
