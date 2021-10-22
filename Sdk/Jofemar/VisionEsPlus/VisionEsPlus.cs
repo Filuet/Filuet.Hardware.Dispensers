@@ -165,11 +165,27 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             InjectCheckSumm(retval);
             return retval;
         }
+
+        /// <summary>
+        ///     Паркует лифт для выдачи, если есть что выдавать.
+        /// </summary>
+        /// <returns>команда</returns>
+        private byte[] Parking()
+        {
+            ////lock (Locker)
+            ////{
+                var retval = new byte[_messagePacket.Length];
+                Array.Copy(_messagePacket, retval, _messagePacket.Length);
+                retval[4] = 0x4d;
+                retval[5] = 0x80;
+                retval[6] = 0x80;
+                InjectCheckSumm(retval);
+                return retval;
+            ////}
+        }
         #endregion
 
         #region Private
-        
-
         /// <summary>
         /// Вставляет во второй и третий с конца байты контрольную сумму в соответствии с протоколом
         /// </summary>
