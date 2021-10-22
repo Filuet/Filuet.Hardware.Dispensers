@@ -1,7 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
 using System;
-using System.Collections.Generic;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -33,14 +32,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return result;
         }
 
-        public bool IsAddressAvailable(string address)
+        public bool Ping(string address)
             => _machineAdapter.IsBeltAvailable(address);
 
-        public IEnumerable<string> AreAddressesAvailable(IEnumerable<string> addresses)
+        public uint GetAddressRank(string address)
         {
-            foreach (var a in addresses)
-                if (IsAddressAvailable(a))
-                    yield return a;
+            string[] mtb = address.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (mtb.Length != 3)
+                throw new ArgumentException($"Invalid dispensing address: {address}");
+
+            if (ushort.TryParse(mtb[0], out ushort machine) && ushort.TryParse(mtb[1], out ushort tray) && ushort.TryParse(mtb[2], out ushort belt))
+                return (uint)(machine * 10000 + 100 * tray + belt);
+            else throw new ArgumentException($"Invalid dispensing address: {address}");
         }
     }
 }

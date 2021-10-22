@@ -1,6 +1,4 @@
-﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
-
-namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models
+﻿namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models
 {
     public class EspBeltAddress
     {

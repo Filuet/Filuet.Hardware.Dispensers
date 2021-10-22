@@ -1,4 +1,5 @@
 ﻿using Filuet.Hardware.CashAcceptors.Abstractions.Converters;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -13,22 +14,43 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     {
         public PoGProduct this[string produitUid] => Products.FirstOrDefault(x => string.Equals(x.ProductUid, produitUid, System.StringComparison.InvariantCultureIgnoreCase));
 
-        public IEnumerable<PoGRoute> GetRoutes(IEnumerable<string> routes)
-            => Products.SelectMany(x => x.Routes).Where(x => routes.Any(r => r == x.Route));
+        public PoGRoute GetRoute(string address)
+            => Products.SelectMany(x => x.Routes).FirstOrDefault(x => address == x.Address);
+
+        public IEnumerable<PoGRoute> GetRoutes(IEnumerable<string> addresses)
+            => Products.SelectMany(x => x.Routes).Where(x => addresses.Any(r => r == x.Address));
+
+        public PoGProduct GetProduct(string address)
+            => Products.FirstOrDefault(x => x.Addresses.Contains(address));
 
         [JsonPropertyName("products")]
         public IEnumerable<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions { };
-            options.Converters.Add(new DispensingRouteConverter());
+            //JsonSerializerOptions options = new JsonSerializerOptions { };
+            //options.Converters.Add(new DispensingRouteConverter());
 
-            return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
+            return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized) };
         }
 
         [JsonIgnore]
-        public IEnumerable<string> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Route));
+        public IEnumerable<string> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
+
+        public void SetAttributes(string route, IDispenser dispenser, bool available)
+        {
+            if (dispenser == null)
+                throw new ArgumentException("Dispenser field is mandatory");
+
+            foreach (var p in Products)
+                foreach (var r in p.Routes)
+                    if (r.Address == route)
+                    {
+                        r.Active = available;
+                        r.Dispenser = dispenser;
+                        break;
+                    }
+        }
     }
 
     public class PoGProduct
@@ -40,15 +62,22 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<PoGRoute> Routes { get; set; }
 
         [JsonIgnore]
-        public IEnumerable<string> Addresses => Routes.Select(x => x.Route);
+        public IEnumerable<string> Addresses => Routes.Select(x => x.Address);
     }
 
     public class PoGRoute
     {
         [JsonPropertyName("r")]
-        public string Route { get; set; }
+        public string Address { get; set; }
 
         [JsonPropertyName("q")]
         public ushort Quantity { get; set; }
+
+        [JsonPropertyName("a")]
+        [JsonConverter(typeof(BoolToNumJsonConverter))]
+        public bool Active { get; set; }
+
+        [JsonIgnore]
+        public IDispenser Dispenser { get; set; }
     }
 }
