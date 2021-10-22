@@ -9,7 +9,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class DispenseCommand
     {
-        public DispensingRoute Address { get; private set; }
+        public string Address { get; private set; }
 
         public ushort Quantity { get; private set; }
 
@@ -19,7 +19,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         /// <param name="address"></param>
         /// <param name="quantity">Quantity to be extracted</param>
         /// <returns></returns>
-        public static DispenseCommand Create(DispensingRoute address, ushort quantity)
+        public static DispenseCommand Create(string address, ushort quantity)
         {
             if (quantity == 0)
                 throw new ArgumentException("Quantity to dispense is mandatory");

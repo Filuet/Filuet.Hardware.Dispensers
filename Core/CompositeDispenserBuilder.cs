@@ -33,13 +33,18 @@ namespace Filuet.Hardware.Dispensers.Core
             return this;
         }
 
-        public ICompositeDispenser Build()
+        public CompositeDispenserBuilder AddLayoutRouteConverter(ILayoutRouteConverter layoutRouteConverter)
         {
-            return new CompositeDispenser(_dispensers, _strategy, _layout, _planogram);
+            _layoutRouteConverter = layoutRouteConverter;
+            return this;
         }
+
+        public ICompositeDispenser Build()
+            => new CompositeDispenser(_dispensers, _strategy, _layout, _layoutRouteConverter, _planogram);
 
         private IEnumerable<IDispenser> _dispensers;
         private IDispensingStrategy _strategy;
+        private ILayoutRouteConverter _layoutRouteConverter;
         private PoG _planogram;
         private ILayout _layout;
     }

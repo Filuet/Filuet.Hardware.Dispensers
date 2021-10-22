@@ -24,9 +24,10 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public static IServiceCollection AddCompositeDispenser(this IServiceCollection serviceCollection,
             Func<IServiceProvider, ICompositeDispenser> dispenserSetup,
+            Func<IServiceProvider, IDispensingStrategy> dispensingStrategy,
             Func<ICompositeDispenser, ICompositeDispenser> decorator = null)
             => serviceCollection
-            .AddSingleton<IDispensingStrategy, MockDispensingStrategy>()
+            .AddSingleton(sp => dispensingStrategy(sp))
             .AddSingleton(sp => decorator != null ? decorator(dispenserSetup(sp)) : dispenserSetup(sp)); //TraceDecorator<ICompositeDispenser>.Create(dispenserSetup(sp))
 
         public static IServiceCollection AddLayout(this IServiceCollection serviceCollection,

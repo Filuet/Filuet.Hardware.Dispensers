@@ -18,7 +18,7 @@ namespace PoC
         static void Main(string[] args)
         {
             IServiceProvider sp = new ServiceCollection()
-                .AddCompositeDispenser((sp) =>
+                .AddCompositeDispenser(sp =>
                 {
                     return new CompositeDispenserBuilder()
                         .AddStrategy(sp.GetRequiredService<IDispensingStrategy>())
@@ -39,9 +39,13 @@ namespace PoC
 
                                 return result;
                             })
-                        .AddPlanogram(() => PoG.Read("[ { \"product\": \"0141\", \"routes\":[ { \"r\": \"1/18/0\", \"q\": 5 }, { \"r\": \"1/16/3\", \"q\" : 3} ] }, { \"product\": \"0145\", \"routes\":[ { \"r\": \"2/18/2\", 1} { \"r\": \"2/16/0\", 5} ] } ]"))
-                        .AddLayout(sp.GetRequiredService<ILayout>()).Build();
-                })
+                        .AddPlanogram(() => PoG.Read("[{\"product\": \"0141\", \"routes\":[ { \"r\": \"1/18/0\", \"q\": 5 }, { \"r\": \"1/16/3\", \"q\" : 3} ] }, { \"product\": \"0145\", \"routes\":[ { \"r\": \"2/18/2\", \"q\" : 1}, { \"r\": \"2/16/0\", \"q\" : 5}]}]"))
+                        .AddLayout(sp.GetRequiredService<ILayout>())
+                        .AddLayoutRouteConverter(sp.GetRequiredService<ILayoutRouteConverter>()).Build();
+                },
+                sp => new VisionEsPlusEvenDispensingStrategy(sp.GetRequiredService<ILayout>())
+                , null
+                )
                 .AddLayout((sp) =>
                 {
                     ILayoutBuilder layoutBuilder = new LayoutBuilder();
@@ -59,8 +63,10 @@ namespace PoC
                                     .AddTray(18)
                                         .AddBelt(2).CommitTray().CommitMachine();
 
-                    return layoutBuilder.Build();
-                }).BuildServiceProvider();
+                    return layoutBuilder.Build(sp.GetRequiredService<ILayoutRouteConverter>());
+                })
+                .AddSingleton<ILayoutRouteConverter, VisionEsPlusLayoutRouteConverter>()
+                .BuildServiceProvider();
 
             ICompositeDispenser compositeDispenser = sp.GetRequiredService<ICompositeDispenser>();
             compositeDispenser.Dispense(new (string productUid, ushort quantity)[] { ("0141", 1 ) });

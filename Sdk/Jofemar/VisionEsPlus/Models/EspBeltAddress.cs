@@ -8,12 +8,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models
 
         public int Belt { get; internal set; }
 
-        public static implicit operator EspBeltAddress(DispensingAddress address)
+        public static implicit operator EspBeltAddress(string address)
         {
-            if (address.Address == null || !address.Address.Contains("/"))
+            if (address == null || !address.Contains("/"))
                 return null;
 
-            string[] blocks = address.Address.Split(new char[] { '/' }, System.StringSplitOptions.RemoveEmptyEntries);
+            string[] blocks = address.Split(new char[] { '/' }, System.StringSplitOptions.RemoveEmptyEntries);
 
             if (blocks.Length != 3)
                 return null;

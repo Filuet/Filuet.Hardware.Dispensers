@@ -1,5 +1,4 @@
-﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
@@ -15,14 +14,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         void Test();
 
-        bool Dispense(DispensingAddress address, uint quantity);
+        bool Dispense(string address, uint quantity);
 
-        bool IsAddressAvailable<T>(T address) where T : new();
+        bool IsAddressAvailable(string address);
 
         /// <summary>
         /// Check addresses availability
         /// </summary>
         /// <returns></returns>
-        IEnumerable<T> AreAddressesAvailable<T>(IEnumerable<T> addresses) where T : new();
+        IEnumerable<string> AreAddressesAvailable(IEnumerable<string> addresses);
     }
 }

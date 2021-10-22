@@ -10,13 +10,18 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class Layout : ILayout
     {
+        public Layout(ILayoutRouteConverter routeConverter)
+        {
+            _routeConverter = routeConverter;
+        }
+
         public IEnumerable<IMachine> Machines => _machines;
 
-        public IBelt GetBelt(string address)
-            => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).FirstOrDefault(x => x.Address == address);
+        public IBelt GetBelt(string route)
+            => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).FirstOrDefault(x => _routeConverter.GetRoute(x) == route);
 
-        public IEnumerable<IBelt> GetBelts(IEnumerable<DispensingRoute> addresses, bool activeOnly = true)
-            => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).Where(x => addresses.Any(a => a == x.Address) && (!activeOnly || x.IsActive));
+        public IEnumerable<IBelt> GetBelts(IEnumerable<string> addresses, bool activeOnly = true)
+            => Machines.SelectMany(x => x.Trays).SelectMany(x => x.Belts).Where(x => addresses.Any(a => a == _routeConverter.GetRoute(x)) && (!activeOnly || x.IsActive));
 
         public IMachine AddMachine<TMachine>(ushort number)
             where TMachine : Machine, new()
@@ -44,5 +49,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         }
 
         public override string ToString() => $"{Machines.Count()} machines";
+
+        private readonly ILayoutRouteConverter _routeConverter;
     }
 }

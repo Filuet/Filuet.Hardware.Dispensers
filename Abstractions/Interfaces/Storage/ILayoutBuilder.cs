@@ -33,6 +33,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
             where TTray : Tray, new()
             where TBelt : Belt, new();
 
-        Layout Build(Func<ILayout, bool> validate = null);
+        Layout Build(ILayoutRouteConverter routeConverter, Func<ILayout, bool> validate = null);
     }
 }

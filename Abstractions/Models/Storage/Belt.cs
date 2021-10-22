@@ -5,9 +5,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     public abstract class Belt : LayoutUnit, IBelt
     {
-        public Tray Tray { get; private set; }
-
-        public virtual DispensingRoute Address { get; }
+        public ITray Tray { get; private set; }
 
         internal void SetTray(Tray tray)
         {

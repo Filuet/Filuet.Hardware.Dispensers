@@ -4,6 +4,6 @@ namespace Filuet.ASC.Kiosk.OnBoard.Dispensing.Tests.Entities
 {
     public class VisionEspBelt : Belt
     {
-        public override DispensingRoute Address => base.Address;
+        public string Route => $"{Tray.Machine.Number}/{Tray.Number}/{Number}";
     }
 }

@@ -33,9 +33,9 @@ namespace Filuet.Hardware.Dispensers.Core.Builders
             return machine;
         }
 
-        public Layout Build(Func<ILayout, bool> validate = null)
+        public Layout Build(ILayoutRouteConverter routeConverter, Func<ILayout, bool> validate = null)
         {
-            Layout layout = new Layout();
+            Layout layout = new Layout(routeConverter);
             layout.AddMachines(_machines);
             
             return (validate == null || validate(layout)) ? layout : null;

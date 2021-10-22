@@ -1,5 +1,4 @@
-﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
-using System;
+﻿using System;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
@@ -17,6 +16,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         void Dispense(params (string productUid, ushort quantity)[] items);
 
-        void CheckChannel(DispensingRoute address);
+        void CheckChannel(string route);
     }
 }

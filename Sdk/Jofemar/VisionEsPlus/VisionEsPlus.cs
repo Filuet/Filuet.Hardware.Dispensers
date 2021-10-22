@@ -94,8 +94,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return true;
         }
 
-        internal bool IsBeltAvailable(EspBeltAddress address)
+        internal bool IsBeltAvailable(string route)
         {
+            EspBeltAddress address = (EspBeltAddress)route;
+
             byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
 
             return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable

@@ -4,7 +4,6 @@ using Filuet.Hardware.Dispensers.Abstractions.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Core
 {
@@ -18,19 +17,20 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public event EventHandler<DispenseFailEventArgs> OnFailed;
 
-        public CompositeDispenser(IEnumerable<IDispenser> dispensers, IDispensingStrategy strategy, ILayout layout, PoG planogram)
+        public CompositeDispenser(IEnumerable<IDispenser> dispensers, IDispensingStrategy strategy, ILayout layout, ILayoutRouteConverter layoutRouteConverter, PoG planogram)
         {
             _dispensers = dispensers;
             _strategy = strategy;
             _layout = layout;
+            _layoutRouteConverter = layoutRouteConverter;
             _planogram = planogram;
 
             // Check how the layout corresponds with the planogram
-            if (planogram.Addresses.Any(x => _layout.GetBelt(x.Address) == null))
+            if (planogram.Addresses.Any(x => _layout.GetBelt(x) == null))
                 throw new ArgumentException("There is a poor match between the planogram and the layout");
         }
 
-        public void CheckChannel(DispensingRoute address)
+        public void CheckChannel(string route)
         {
             throw new NotImplementedException();
         }
@@ -46,10 +46,10 @@ namespace Filuet.Hardware.Dispensers.Core
                 IDispenser _dispenser = _dispensers.SingleOrDefault(x => x.Id == command.Address.VendingMachineID);
 
                 if (_dispenser == null)
-                    OnFailed?.Invoke(this, new DispenseFailEventArgs { address = command.Address.Address, message = "Unable to detect the machine" });
+                    OnFailed?.Invoke(this, new DispenseFailEventArgs { address = command.Address, message = "Unable to detect the machine" });
 
                 if (_dispenser.Dispense(command.Address, command.Quantity))
-                    OnDispensing?.Invoke(this, new DispenseEventArgs { address = command.Address.Address });
+                    OnDispensing?.Invoke(this, new DispenseEventArgs { address = command.Address });
             }
         }
 
@@ -61,19 +61,19 @@ namespace Filuet.Hardware.Dispensers.Core
                 if (dispenser == null)
                     continue;
 
-                IEnumerable<DispensingRoute> available =
-                    dispenser.AreAddressesAvailable(machine.Trays.SelectMany(x => x.Belts)
-                    .Select(x => DispensingRoute.Create(machine.Number, x.Address)));
+                IEnumerable<string> available =
+                    dispenser.AreAddressesAvailable(machine.Trays.SelectMany(x => x.Belts).Select(x => _layoutRouteConverter.GetRoute(x)));
 
                 foreach (var t in machine.Trays)
                     foreach (var b in t.Belts)
-                        b.SetActive(available.Any(x => x.Address == b.Address));
+                        b.SetActive(available.Any(x => x == _layoutRouteConverter.GetRoute(b)));
             }
         }
 
         private readonly IEnumerable<IDispenser> _dispensers;
         private readonly IDispensingStrategy _strategy;
         private readonly ILayout _layout;
+        private readonly ILayoutRouteConverter _layoutRouteConverter;
         private readonly PoG _planogram;
     }
 }

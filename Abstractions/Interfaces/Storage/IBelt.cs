@@ -1,8 +1,7 @@
-﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
-
-namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
+﻿namespace Filuet.Hardware.Dispensers.Abstractions.Interfaces
 {
-    public interface IBelt : ILayoutUnit {
-        DispensingRoute Address { get; }
+    public interface IBelt : ILayoutUnit
+    {
+        ITray Tray { get; }
     }
 }
