@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Filuet.Infrastructure.Communication" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\Common\Filuet.Hardware.Dispensers.Common.csproj" />
   </ItemGroup>

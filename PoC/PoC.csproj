@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Filuet.Infrastructure.Communication" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Core\Filuet.Hardware.Dispensers.Core.csproj" />
     <ProjectReference Include="..\Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj" />
   </ItemGroup>

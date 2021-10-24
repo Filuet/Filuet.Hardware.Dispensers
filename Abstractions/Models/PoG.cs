@@ -1,4 +1,5 @@
 ﻿using Filuet.Hardware.CashAcceptors.Abstractions.Converters;
+using Filuet.Infrastructure.Abstractions.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;

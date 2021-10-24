@@ -1,10 +1,9 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
-using Filuet.Hardware.Dispensers.Common;
-using Filuet.Hardware.Dispensers.Common.Interfaces;
 using Filuet.Hardware.Dispensers.Core;
 using Filuet.Hardware.Dispensers.Core.Strategy;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
+using Filuet.Infrastructure.Communication;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
