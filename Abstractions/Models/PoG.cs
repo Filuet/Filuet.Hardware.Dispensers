@@ -28,26 +28,18 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
-        {
-            //JsonSerializerOptions options = new JsonSerializerOptions { };
-            //options.Converters.Add(new DispensingRouteConverter());
-
-            return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized) };
-        }
+            => new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized) };
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
 
         public void SetAttributes(string route, IDispenser dispenser, bool available)
         {
-            if (dispenser == null)
-                throw new ArgumentException("Dispenser field is mandatory");
-
             foreach (var p in Products)
                 foreach (var r in p.Routes)
                     if (r.Address == route)
                     {
-                        r.Active = available;
+                        r.Active = dispenser != null && available;
                         r.Dispenser = dispenser;
                         break;
                     }

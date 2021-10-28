@@ -1,5 +1,4 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Enums;
-using Filuet.Hardware.Dispensers.Common.Interfaces;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
 using Filuet.Infrastructure.Communication;
