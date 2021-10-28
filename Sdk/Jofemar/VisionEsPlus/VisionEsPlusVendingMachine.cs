@@ -1,8 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
-using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System;
-using System.Collections.Generic;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -25,7 +23,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             onTest?.Invoke(this, new DispenserTestEventArgs { Severity = testResult.severity, Message = testResult.message });
         }
 
-        public bool Dispense(DispenseAddress address, uint quantity)   
+        public bool Dispense(string address, uint quantity)   
         {
             var t = _machineAdapter.Status(false);
             bool result = _machineAdapter.DispenseProduct(address, quantity);
@@ -34,21 +32,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return result;
         }
 
-        public bool IsAddressAvailable<T>(T address) where T : new()
-            => _machineAdapter.IsBeltAvailable((address as DispenseAddress));
+        public bool Ping(string address)
+            => _machineAdapter.IsBeltAvailable(address);
 
-        public IEnumerable<CompositDispenseAddress> AreAddressesAv_ailable1(IEnumerable<CompositDispenseAddress> addresses)
+        public uint GetAddressRank(string address)
         {
-            foreach (var a in addresses)
-                if (IsAddressAvailable(a))
-                    yield return a;
-        }
+            string[] mtb = address.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (mtb.Length != 3)
+                throw new ArgumentException($"Invalid dispensing address: {address}");
 
-        public IEnumerable<T> AreAddressesAvailable<T>(IEnumerable<T> addresses) where T : new()
-        {
-            foreach (var a in addresses)
-                if (IsAddressAvailable(a))
-                    yield return a;
+            if (ushort.TryParse(mtb[0], out ushort machine) && ushort.TryParse(mtb[1], out ushort tray) && ushort.TryParse(mtb[2], out ushort belt))
+                return (uint)(machine * 10000 + 100 * tray + belt);
+            else throw new ArgumentException($"Invalid dispensing address: {address}");
         }
     }
 }

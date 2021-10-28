@@ -6,8 +6,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Filuet.Infrastructure.Communication" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Core\Filuet.Hardware.Dispensers.Core.csproj" />
     <ProjectReference Include="..\Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

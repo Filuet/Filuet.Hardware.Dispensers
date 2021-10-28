@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -9,22 +7,22 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class DispenseCommand
     {
-        public CompositDispenseAddress Address { get; private set; }
+        public PoGRoute Route { get; private set; }
 
         public ushort Quantity { get; private set; }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="route"></param>
         /// <param name="quantity">Quantity to be extracted</param>
         /// <returns></returns>
-        public static DispenseCommand Create(CompositDispenseAddress address, ushort quantity)
+        public static DispenseCommand Create(PoGRoute route, ushort quantity)
         {
             if (quantity == 0)
                 throw new ArgumentException("Quantity to dispense is mandatory");
 
-            return new DispenseCommand { Address = address, Quantity = quantity };
+            return new DispenseCommand { Route = route, Quantity = quantity };
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Enums;
-using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Common.Interfaces;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
+using Filuet.Infrastructure.Communication;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -95,10 +95,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return true;
         }
 
-        internal bool IsBeltAvailable(DispenseAddress address)
+        internal bool IsBeltAvailable(string route)
         {
-            EspBeltAddress a = (EspBeltAddress)address;
-            byte[] response = _channel.SendCommand(CheckChannelCommand(a.Tray, a.Belt));
+            EspBeltAddress address = (EspBeltAddress)route;
+
+            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
 
             return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
         }
@@ -165,11 +166,27 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             InjectCheckSumm(retval);
             return retval;
         }
+
+        /// <summary>
+        ///     Паркует лифт для выдачи, если есть что выдавать.
+        /// </summary>
+        /// <returns>команда</returns>
+        private byte[] Parking()
+        {
+            ////lock (Locker)
+            ////{
+                var retval = new byte[_messagePacket.Length];
+                Array.Copy(_messagePacket, retval, _messagePacket.Length);
+                retval[4] = 0x4d;
+                retval[5] = 0x80;
+                retval[6] = 0x80;
+                InjectCheckSumm(retval);
+                return retval;
+            ////}
+        }
         #endregion
 
         #region Private
-        
-
         /// <summary>
         /// Вставляет во второй и третий с конца байты контрольную сумму в соответствии с протоколом
         /// </summary>

@@ -1,36 +1,26 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
-using Filuet.Hardware.Dispensers.Abstractions.Interfaces;
+using Filuet.Hardware.Dispensers.Core.Strategy;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Core
 {
     internal class CompositeDispenser : ICompositeDispenser
     {
         public event EventHandler<DispenseEventArgs> OnDispensing;
-
         public event EventHandler<ProductDispensedEventArgs> OnDispensingFinished;
-
         public event EventHandler<DispenserTestEventArgs> OnTest;
-
         public event EventHandler<DispenseFailEventArgs> OnFailed;
 
-        public CompositeDispenser(IEnumerable<IDispenser> dispensers, IDispensingStrategy strategy, ILayout layout, PoG planogram)
+        public CompositeDispenser(IEnumerable<IDispenser> dispensers, DispensingChainBuilder chainBuilder, PoG planogram)
         {
             _dispensers = dispensers;
-            _strategy = strategy;
-            _layout = layout;
+            _chainBuilder = chainBuilder;
             _planogram = planogram;
-
-            // Check how the layout corresponds with the planogram
-            if (planogram.Addresses.Any(x => _layout.GetBelt(x.Address) == null))
-                throw new ArgumentException("There is a poor match between the planogram and the layout");
         }
 
-        public void CheckChannel(CompositDispenseAddress address)
+        public void CheckChannel(string route)
         {
             throw new NotImplementedException();
         }
@@ -39,41 +29,38 @@ namespace Filuet.Hardware.Dispensers.Core
         {
             PingAddresses();
 
-            IEnumerable<DispenseCommand> dispensingChain = _strategy.BuildDispensingChain(items.ToDictionary(x => x.productUid, y => y.quantity), _planogram);
+            IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address => {
+                PoGRoute route = _planogram.GetRoute(address);
+                return route.Dispenser.GetAddressRank(address);
+            });
 
             foreach (DispenseCommand command in dispensingChain)
             {
-                IDispenser _dispenser = _dispensers.SingleOrDefault(x => x.Id == command.Address.VendingMachineID);
-
-                if (_dispenser == null)
-                    OnFailed?.Invoke(this, new DispenseFailEventArgs { address = command.Address.Address, message = "Unable to detect the machine" });
-
-                if (_dispenser.Dispense(command.Address, command.Quantity))
-                    OnDispensing?.Invoke(this, new DispenseEventArgs { address = command.Address.Address });
+                if (command.Route.Dispenser.Dispense(command.Route.Address, command.Quantity))
+                    OnDispensing?.Invoke(this, new DispenseEventArgs { address = command.Route.Address });
             }
         }
 
         private void PingAddresses()
         {
-            foreach (var machine in _layout.Machines)
+            foreach (string route in _planogram.Addresses)
             {
-                IDispenser dispenser = _dispensers.FirstOrDefault(x => x.Id == machine.Number);
-                if (dispenser == null)
-                    continue;
+                bool isRouteAvailable = false;
+                IDispenser correspondentDispenser = null;
+                foreach (IDispenser dispenser in _dispensers)
+                    if (dispenser.Ping(route))
+                    {
+                        correspondentDispenser = dispenser;
+                        isRouteAvailable = true;
+                        break;
+                    }
 
-                IEnumerable<CompositDispenseAddress> available =
-                    dispenser.AreAddressesAvailable(machine.Trays.SelectMany(x => x.Belts)
-                    .Select(x => CompositDispenseAddress.Create(machine.Number, x.Address)));
-
-                foreach (var t in machine.Trays)
-                    foreach (var b in t.Belts)
-                        b.SetActive(available.Any(x => x.Address == b.Address));
+                _planogram.SetAttributes(route, correspondentDispenser, isRouteAvailable);
             }
         }
 
         private readonly IEnumerable<IDispenser> _dispensers;
-        private readonly IDispensingStrategy _strategy;
-        private readonly ILayout _layout;
+        private readonly DispensingChainBuilder _chainBuilder;
         private readonly PoG _planogram;
     }
 }
