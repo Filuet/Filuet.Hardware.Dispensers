@@ -23,8 +23,10 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
 
                 // find the best belt to extract
 
-                yield return DispenseCommand.Create(... , item.Value);
+               // yield return DispenseCommand.Create(... , item.Value);
             }
+
+            return null;
         }
 
         private readonly ILayout _layout;

@@ -37,7 +37,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public bool IsAddressAvailable<T>(T address) where T : new()
             => _machineAdapter.IsBeltAvailable((address as DispenseAddress));
 
-        public IEnumerable<CompositDispenseAddress> AreAddressesAvailable1(IEnumerable<CompositDispenseAddress> addresses)
+        public IEnumerable<CompositDispenseAddress> AreAddressesAv_ailable1(IEnumerable<CompositDispenseAddress> addresses)
         {
             foreach (var a in addresses)
                 if (IsAddressAvailable(a))

@@ -1,4 +1,5 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Enums;
+using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Common.Interfaces;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
@@ -94,9 +95,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return true;
         }
 
-        internal bool IsBeltAvailable(EspBeltAddress address)
+        internal bool IsBeltAvailable(DispenseAddress address)
         {
-            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
+            EspBeltAddress a = (EspBeltAddress)address;
+            byte[] response = _channel.SendCommand(CheckChannelCommand(a.Tray, a.Belt));
 
             return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
         }
