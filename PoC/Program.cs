@@ -7,6 +7,7 @@ using Filuet.Infrastructure.Communication;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace PoC
 {
@@ -42,10 +43,9 @@ namespace PoC
                 }, null)
                 .BuildServiceProvider();
 
-            ICompositeDispenser compositeDispenser = sp.GetRequiredService<ICompositeDispenser>();
-            compositeDispenser.Dispense(new (string productUid, ushort quantity)[] { ("0141", 1 ) });
-
-            Console.WriteLine();
+            PoCForm form = new PoCForm();
+            form.Initialize(sp.GetRequiredService<PoG>(), sp.GetRequiredService<ICompositeDispenser>());
+            Application.Run(form);
         }
     }
 }

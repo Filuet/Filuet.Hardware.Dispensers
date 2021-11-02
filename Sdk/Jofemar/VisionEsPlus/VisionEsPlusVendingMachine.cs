@@ -45,5 +45,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 return (uint)(machine * 10000 + 100 * tray + belt);
             else throw new ArgumentException($"Invalid dispensing address: {address}");
         }
+
+        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]";
     }
 }

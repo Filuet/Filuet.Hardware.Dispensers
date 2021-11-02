@@ -21,6 +21,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<PoGRoute> GetRoutes(IEnumerable<string> addresses)
             => Products.SelectMany(x => x.Routes).Where(x => addresses.Any(r => r == x.Address));
 
+        public IEnumerable<PoGRoute> GetRoutes(uint machine)
+            => Products.SelectMany(x => x.Routes).Where(x => x.Dispenser?.Id == machine);
+
         public PoGProduct GetProduct(string address)
             => Products.FirstOrDefault(x => x.Addresses.Contains(address));
 
@@ -56,6 +59,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Routes.Select(x => x.Address);
+
+        public override string ToString() => ProductUid;
     }
 
     public class PoGRoute
@@ -72,5 +77,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonIgnore]
         public IDispenser Dispenser { get; set; }
+
+        public override string ToString() => $"{Address}: {Quantity}";
     }
 }

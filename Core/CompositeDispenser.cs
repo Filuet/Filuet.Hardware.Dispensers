@@ -3,6 +3,9 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core.Strategy;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("PoC")]
 
 namespace Filuet.Hardware.Dispensers.Core
 {
@@ -18,6 +21,8 @@ namespace Filuet.Hardware.Dispensers.Core
             _dispensers = dispensers;
             _chainBuilder = chainBuilder;
             _planogram = planogram;
+
+            PingAddresses();
         }
 
         public void CheckChannel(string route)
@@ -59,8 +64,8 @@ namespace Filuet.Hardware.Dispensers.Core
             }
         }
 
-        private readonly IEnumerable<IDispenser> _dispensers;
+        internal readonly IEnumerable<IDispenser> _dispensers;
         private readonly DispensingChainBuilder _chainBuilder;
-        private readonly PoG _planogram;
+        internal readonly PoG _planogram;
     }
 }
