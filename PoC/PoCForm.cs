@@ -7,16 +7,30 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Filuet.Infrastructure.Abstractions.Helpers;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using System.Threading;
 
 namespace PoC
 {
     public partial class PoCForm : Form
     {
+        private IEnumerable<ItemToDispense> ToDispense
+        {
+            get
+            {
+                foreach (ItemToDispense i in dispenseListBox.Items)
+                    yield return i;
+            }
+        }
+
+
         public PoCForm()
         {
             InitializeComponent();
@@ -27,26 +41,59 @@ namespace PoC
             _planogram = planogram;
             _dispenser = dispenser;
 
+            _dispenser.onTest += (sender, e) =>
+            {
+                MachineIdIsAvailable[e.Dispenser.Id] = e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Normal;
+
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    dispensersListBox.Items.Clear();
+
+                    foreach (var d in _factDispenser._dispensers)
+                    {
+                        if (MachineIdIsAvailable[d.Id])
+                            dispensersListBox.Items.Add(d);
+
+                        if (d.Id == e.Dispenser.Id)
+                            Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"Dispenser №{e.Dispenser.Id} {e.Message}");
+                    }
+                }));
+            };
+
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
             skuComboBox.SelectedIndex = 0;
 
             _factDispenser = (CompositeDispenser)_dispenser;
             foreach (var d in _factDispenser._dispensers)
+            {
+                MachineIdIsAvailable[d.Id] = true;
                 dispensersListBox.Items.Add(d);
+            }
 
             if (dispensersListBox.Items.Count == 1)
                 dispensersListBox.SelectedIndex = 0;
+
+            planogramRichTextBox.Text = planogram.ToString();
+
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(5000);
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    retestButton.Enabled = true;
+                }));
+            });
         }
 
         private void dispenseButton_Click(object sender, EventArgs e)
         {
-            _dispenser.Dispense(new (string productUid, ushort quantity)[] { ("0141", 1) });
+            _dispenser.Dispense(ToDispense.Select(x => (x.Product.ProductUid, x.Qty)).ToArray());
         }
 
         private void addSkuButton_Click(object sender, EventArgs e)
         {
             PoGProduct product = skuComboBox.SelectedItem as PoGProduct;
-            uint qty = (uint)qtyNumericUpDown.Value;
+            ushort qty = (ushort)qtyNumericUpDown.Value;
 
             bool alreadyExists = false;
 
@@ -95,5 +142,26 @@ namespace PoC
             foreach (var r in routes)
                 addressesListBox.Items.Add($"{r} of {_planogram.GetProduct(r.Address).ProductUid}");
         }
+
+        private void savePlanogramButton_Click(object sender, EventArgs e)
+        {
+            if (planogramRichTextBox.Text.IsValidJson())
+            {
+                File.WriteAllText("test_planogram.json", planogramRichTextBox.Text);
+            }
+        }
+
+        private void Log(LogLevel level, string message)
+        {
+            protoTextBox.Text += $"{DateTime.Now:HH:mm:ss} {level} {message}{Environment.NewLine}";
+        }
+
+        private void retestButton_Click(object sender, EventArgs e)
+        {
+            retestButton.Enabled = false;
+            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate () { retestButton.Enabled = true; })));
+        }
+
+        private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
     }
 }

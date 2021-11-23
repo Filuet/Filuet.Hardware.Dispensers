@@ -34,8 +34,9 @@ namespace PoC
             this.addressesListBox = new System.Windows.Forms.ListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.retestButton = new System.Windows.Forms.Button();
             this.dispenseButton = new System.Windows.Forms.Button();
-            this.richTextBox2 = new System.Windows.Forms.RichTextBox();
+            this.protoTextBox = new System.Windows.Forms.RichTextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.qtyNumericUpDown = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
@@ -46,8 +47,8 @@ namespace PoC
             this.label2 = new System.Windows.Forms.Label();
             this.skuComboBox = new System.Windows.Forms.ComboBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.button1 = new System.Windows.Forms.Button();
-            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.savePlanogramButton = new System.Windows.Forms.Button();
+            this.planogramRichTextBox = new System.Windows.Forms.RichTextBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -60,9 +61,9 @@ namespace PoC
             this.dispensersListBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.dispensersListBox.FormattingEnabled = true;
             this.dispensersListBox.ItemHeight = 15;
-            this.dispensersListBox.Location = new System.Drawing.Point(487, 21);
+            this.dispensersListBox.Location = new System.Drawing.Point(465, 51);
             this.dispensersListBox.Name = "dispensersListBox";
-            this.dispensersListBox.Size = new System.Drawing.Size(150, 64);
+            this.dispensersListBox.Size = new System.Drawing.Size(150, 79);
             this.dispensersListBox.TabIndex = 0;
             this.dispensersListBox.SelectedIndexChanged += new System.EventHandler(this.dispensersListBox_SelectedIndexChanged);
             // 
@@ -70,7 +71,7 @@ namespace PoC
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(482, 3);
+            this.label1.Location = new System.Drawing.Point(460, 3);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(63, 15);
             this.label1.TabIndex = 1;
@@ -82,9 +83,9 @@ namespace PoC
             | System.Windows.Forms.AnchorStyles.Right)));
             this.addressesListBox.FormattingEnabled = true;
             this.addressesListBox.ItemHeight = 15;
-            this.addressesListBox.Location = new System.Drawing.Point(487, 89);
+            this.addressesListBox.Location = new System.Drawing.Point(465, 134);
             this.addressesListBox.Name = "addressesListBox";
-            this.addressesListBox.Size = new System.Drawing.Size(150, 334);
+            this.addressesListBox.Size = new System.Drawing.Size(150, 289);
             this.addressesListBox.TabIndex = 3;
             // 
             // tabControl1
@@ -100,8 +101,9 @@ namespace PoC
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.retestButton);
             this.tabPage1.Controls.Add(this.dispenseButton);
-            this.tabPage1.Controls.Add(this.richTextBox2);
+            this.tabPage1.Controls.Add(this.protoTextBox);
             this.tabPage1.Controls.Add(this.groupBox1);
             this.tabPage1.Controls.Add(this.addressesListBox);
             this.tabPage1.Controls.Add(this.dispensersListBox);
@@ -114,6 +116,18 @@ namespace PoC
             this.tabPage1.Text = "Dispensing";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // retestButton
+            // 
+            this.retestButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.retestButton.Enabled = false;
+            this.retestButton.Location = new System.Drawing.Point(465, 21);
+            this.retestButton.Name = "retestButton";
+            this.retestButton.Size = new System.Drawing.Size(58, 23);
+            this.retestButton.TabIndex = 14;
+            this.retestButton.Text = "Retest";
+            this.retestButton.UseVisualStyleBackColor = true;
+            this.retestButton.Click += new System.EventHandler(this.retestButton_Click);
+            // 
             // dispenseButton
             // 
             this.dispenseButton.Location = new System.Drawing.Point(3, 111);
@@ -124,16 +138,16 @@ namespace PoC
             this.dispenseButton.UseVisualStyleBackColor = true;
             this.dispenseButton.Click += new System.EventHandler(this.dispenseButton_Click);
             // 
-            // richTextBox2
+            // protoTextBox
             // 
-            this.richTextBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.protoTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox2.Location = new System.Drawing.Point(3, 140);
-            this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(478, 284);
-            this.richTextBox2.TabIndex = 13;
-            this.richTextBox2.Text = "";
+            this.protoTextBox.Location = new System.Drawing.Point(3, 140);
+            this.protoTextBox.Name = "protoTextBox";
+            this.protoTextBox.Size = new System.Drawing.Size(456, 284);
+            this.protoTextBox.TabIndex = 13;
+            this.protoTextBox.Text = "";
             // 
             // groupBox1
             // 
@@ -149,7 +163,7 @@ namespace PoC
             this.groupBox1.Controls.Add(this.skuComboBox);
             this.groupBox1.Location = new System.Drawing.Point(3, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(478, 102);
+            this.groupBox1.Size = new System.Drawing.Size(456, 102);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Goods list";
@@ -188,7 +202,7 @@ namespace PoC
             // removeItemButton
             // 
             this.removeItemButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.removeItemButton.Location = new System.Drawing.Point(415, 14);
+            this.removeItemButton.Location = new System.Drawing.Point(371, 14);
             this.removeItemButton.Name = "removeItemButton";
             this.removeItemButton.Size = new System.Drawing.Size(60, 23);
             this.removeItemButton.TabIndex = 9;
@@ -213,7 +227,7 @@ namespace PoC
             this.dispenseListBox.ItemHeight = 15;
             this.dispenseListBox.Location = new System.Drawing.Point(282, 15);
             this.dispenseListBox.Name = "dispenseListBox";
-            this.dispenseListBox.Size = new System.Drawing.Size(129, 79);
+            this.dispenseListBox.Size = new System.Drawing.Size(85, 79);
             this.dispenseListBox.TabIndex = 6;
             // 
             // addSkuButton
@@ -245,36 +259,37 @@ namespace PoC
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.button1);
-            this.tabPage2.Controls.Add(this.richTextBox1);
+            this.tabPage2.Controls.Add(this.savePlanogramButton);
+            this.tabPage2.Controls.Add(this.planogramRichTextBox);
             this.tabPage2.Location = new System.Drawing.Point(4, 24);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(640, 431);
+            this.tabPage2.Size = new System.Drawing.Size(662, 431);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Planogram";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // button1
+            // savePlanogramButton
             // 
-            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(562, 405);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "Save";
-            this.button1.UseVisualStyleBackColor = true;
+            this.savePlanogramButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.savePlanogramButton.Location = new System.Drawing.Point(562, 405);
+            this.savePlanogramButton.Name = "savePlanogramButton";
+            this.savePlanogramButton.Size = new System.Drawing.Size(75, 23);
+            this.savePlanogramButton.TabIndex = 1;
+            this.savePlanogramButton.Text = "Save";
+            this.savePlanogramButton.UseVisualStyleBackColor = true;
+            this.savePlanogramButton.Click += new System.EventHandler(this.savePlanogramButton_Click);
             // 
-            // richTextBox1
+            // planogramRichTextBox
             // 
-            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.planogramRichTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextBox1.Location = new System.Drawing.Point(3, 3);
-            this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(634, 396);
-            this.richTextBox1.TabIndex = 0;
-            this.richTextBox1.Text = "";
+            this.planogramRichTextBox.Location = new System.Drawing.Point(3, 3);
+            this.planogramRichTextBox.Name = "planogramRichTextBox";
+            this.planogramRichTextBox.Size = new System.Drawing.Size(634, 396);
+            this.planogramRichTextBox.TabIndex = 0;
+            this.planogramRichTextBox.Text = "";
             // 
             // PoCForm
             // 
@@ -304,7 +319,7 @@ namespace PoC
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.Button dispenseButton;
-        private System.Windows.Forms.RichTextBox richTextBox2;
+        private System.Windows.Forms.RichTextBox protoTextBox;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.NumericUpDown qtyNumericUpDown;
         private System.Windows.Forms.Label label4;
@@ -315,7 +330,8 @@ namespace PoC
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox skuComboBox;
         private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.Button savePlanogramButton;
+        private System.Windows.Forms.RichTextBox planogramRichTextBox;
+        private System.Windows.Forms.Button retestButton;
     }
 }

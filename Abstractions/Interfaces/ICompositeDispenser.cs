@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
@@ -8,14 +9,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// <remarks>Can consist of any quantity of single dispensers</remarks>
     public interface ICompositeDispenser
     {
-        event EventHandler<DispenseEventArgs> OnDispensing;
+        event EventHandler<DispenseEventArgs> onDispensing;
 
-        event EventHandler<ProductDispensedEventArgs> OnDispensingFinished;
+        event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
 
-        event EventHandler<DispenserTestEventArgs> OnTest;
+        event EventHandler<CompositeDispenserTestEventArgs> onTest;
 
-        void Dispense(params (string productUid, ushort quantity)[] items);
+        Task Dispense(params (string productUid, ushort quantity)[] items);
 
-        void CheckChannel(string route);
+        Task Test();
     }
 }

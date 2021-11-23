@@ -1,12 +1,18 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
+using Filuet.Infrastructure.Abstractions.Helpers;
 using Filuet.Infrastructure.Communication;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -47,41 +53,56 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             sw.Stop();
         }
 
-        internal (DispenserStateSeverity state, string message) Status(bool retryIfFaulty = true)
-        {
-            byte[] response = _channel.SendCommand(StatusCommand());
-
-            if ((response == null || response.Length == 0) && _lastTestResponse != null)
-                response = _lastTestResponse;
-
-            _lastTestResponse = response;
-            VisionEsPlusResponseCodes code = ParseResponse(response);
-
-            switch (code)
+        internal async Task<(DispenserStateSeverity state, string message)> Status()
+            => await Task.Factory.StartNew<(DispenserStateSeverity state, string message)>(() =>
             {
-                case VisionEsPlusResponseCodes.Unknown: // need to resend request in case of unknown status
+                byte[] response = null;
+
+                Func<bool> sendRequest = () =>
+                {
+                    try
                     {
-                        if (retryIfFaulty)
-                            return Status(false);
-                        else return (DispenserStateSeverity.Inoperable, "The door is probably open");
+                        return TaskHelpers.ExecuteWithTimeLimit(TimeSpan.FromSeconds(5), () =>
+                            response = _channel.SendCommand(StatusCommand()));
                     }
-                case VisionEsPlusResponseCodes.Ok:
-                case VisionEsPlusResponseCodes.Ready:
-                case VisionEsPlusResponseCodes.FaultIn485Bus:
-                    return (DispenserStateSeverity.Normal, string.Empty);
-                default:
-                    switch (TryGetDoorState(response))
-                    {
-                        case DoorState.DoorClosed:
-                            return (DispenserStateSeverity.Normal, "The door was closed");
-                        case DoorState.DoorOpen:
-                            return (DispenserStateSeverity.MaintenanceService, "The door is open");
-                        case DoorState.Unknown:
-                        default:
-                            return (DispenserStateSeverity.Inoperable, string.Empty);
-                    }
-            }
-        }
+                    catch { }
+
+                    return false;
+                };
+
+                if (!sendRequest())
+                    return (DispenserStateSeverity.Inoperable, "Unable to connect");
+
+                if ((response == null || response.Length == 0) && _lastTestResponse != null)
+                    response = _lastTestResponse;
+
+                _lastTestResponse = response;
+                VisionEsPlusResponseCodes code = ParseResponse(response);
+
+                if (code == VisionEsPlusResponseCodes.Unknown && sendRequest()) // need to resend request in case of unknown status
+                    code = ParseResponse(response);
+
+                switch (code)
+                {
+                    case VisionEsPlusResponseCodes.Unknown:
+                        return (DispenserStateSeverity.Inoperable, "The machine is inoperable");
+                    case VisionEsPlusResponseCodes.Ok:
+                    case VisionEsPlusResponseCodes.Ready:
+                    case VisionEsPlusResponseCodes.FaultIn485Bus:
+                        return (DispenserStateSeverity.Normal, "The machine is connected");
+                    default:
+                        switch (TryGetDoorState(response))
+                        {
+                            case DoorState.DoorClosed:
+                                return (DispenserStateSeverity.Normal, "The door was closed");
+                            case DoorState.DoorOpen:
+                                return (DispenserStateSeverity.MaintenanceService, "The door is open");
+                            case DoorState.Unknown:
+                            default:
+                                return (DispenserStateSeverity.Inoperable, "The machine is inoperable");
+                        }
+                }
+            });
 
         internal bool DispenseProduct(EspBeltAddress address, uint quantity)
         {
@@ -174,13 +195,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         {
             ////lock (Locker)
             ////{
-                var retval = new byte[_messagePacket.Length];
-                Array.Copy(_messagePacket, retval, _messagePacket.Length);
-                retval[4] = 0x4d;
-                retval[5] = 0x80;
-                retval[6] = 0x80;
-                InjectCheckSumm(retval);
-                return retval;
+            var retval = new byte[_messagePacket.Length];
+            Array.Copy(_messagePacket, retval, _messagePacket.Length);
+            retval[4] = 0x4d;
+            retval[5] = 0x80;
+            retval[6] = 0x80;
+            InjectCheckSumm(retval);
+            return retval;
             ////}
         }
         #endregion

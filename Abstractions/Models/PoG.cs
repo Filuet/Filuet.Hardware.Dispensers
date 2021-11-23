@@ -1,5 +1,4 @@
-﻿using Filuet.Hardware.CashAcceptors.Abstractions.Converters;
-using Filuet.Infrastructure.Abstractions.Converters;
+﻿using Filuet.Infrastructure.Abstractions.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +30,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
-            => new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized) };
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.Converters.Add(new BoolToNumJsonConverter());
+            return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
+        }
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
@@ -46,6 +49,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                         r.Dispenser = dispenser;
                         break;
                     }
+        }
+
+        public override string ToString()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.Converters.Add(new BoolToNumJsonConverter());
+            options.WriteIndented = true;
+            return JsonSerializer.Serialize(Products, options);
         }
     }
 

@@ -1,6 +1,7 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
 using System;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -9,31 +10,30 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<DispenserTestEventArgs> onTest;
         private VisionEsPlus _machineAdapter;
 
-        public uint Id { get; private set; }
-
         public VisionEsPlusVendingMachine(uint id, VisionEsPlus machineAdapter)
         {
             _machineAdapter = machineAdapter;
             Id = id;
         }
 
-        public void Test()
+        public async Task Test()
         {
-            (DispenserStateSeverity severity, string message) testResult = _machineAdapter.Status();
+            (DispenserStateSeverity severity, string message) testResult = await _machineAdapter.Status();
+            _isAvailable = testResult.severity == DispenserStateSeverity.Normal;
             onTest?.Invoke(this, new DispenserTestEventArgs { Severity = testResult.severity, Message = testResult.message });
         }
 
-        public bool Dispense(string address, uint quantity)   
+        public bool Dispense(string address, uint quantity)
         {
-            var t = _machineAdapter.Status(false);
+            var t = _machineAdapter.Status();
             bool result = _machineAdapter.DispenseProduct(address, quantity);
-            var t1 = _machineAdapter.Status(false);
+            var t1 = _machineAdapter.Status();
 
             return result;
         }
 
         public bool Ping(string address)
-            => _machineAdapter.IsBeltAvailable(address);
+            => !_isAvailable ? false : _machineAdapter.IsBeltAvailable(address);
 
         public uint GetAddressRank(string address)
         {
@@ -47,5 +47,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]";
+        public uint Id { get; private set; }
+
+        public bool _isAvailable = false;
     }
 }

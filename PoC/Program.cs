@@ -7,6 +7,7 @@ using Filuet.Infrastructure.Communication;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
 
 namespace PoC
@@ -16,7 +17,7 @@ namespace PoC
         static void Main(string[] args)
         {
             IServiceProvider sp = new ServiceCollection()
-                .AddSingleton(PoG.Read(Properties.Resources.test_pranogram))
+                .AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
                 .AddCompositeDispenser(sp =>
                 {
                     return new CompositeDispenserBuilder()
@@ -25,16 +26,19 @@ namespace PoC
                             {
                                 List<IDispenser> result = new List<IDispenser>();
 
-                                VisionEsPlusSettings settings = new VisionEsPlusSettings
+                                for (int i = 1; i <= 2; i++)
                                 {
-                                    PortNumber = (ushort)5051,
-                                    Address = "0x01",
-                                    IpAddress = "172.16.7.103"
-                                };
+                                    VisionEsPlusSettings settings = new VisionEsPlusSettings
+                                    {
+                                        PortNumber = (ushort)5051,
+                                        Address = string.Format("0x{0:X2}", i), // "0x01",
+                                        IpAddress = "172.16.7.103"
+                                    };
 
-                                ICommunicationChannel channel = new TcpChannel(settings.IpAddress, settings.PortNumber);
- 
-                                result.Add(new VisionEsPlusVendingMachine(1, new VisionEsPlus(channel, settings)));
+                                    ICommunicationChannel channel = new TcpChannel(settings.IpAddress, settings.PortNumber);
+
+                                    result.Add(new VisionEsPlusVendingMachine((uint)i, new VisionEsPlus(channel, settings)));
+                                }
 
                                 return result;
                             })

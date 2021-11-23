@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
@@ -11,7 +12,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         uint Id { get; }
 
-        void Test();
+        Task Test();
 
         bool Dispense(string address, uint quantity);
 
