@@ -13,6 +13,7 @@ namespace Filuet.Hardware.Dispensers.Core
 {
     internal class CompositeDispenser : ICompositeDispenser
     {
+        public event EventHandler<string> onResponse;
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
         public event EventHandler<CompositeDispenserTestEventArgs> onTest;
@@ -22,7 +23,11 @@ namespace Filuet.Hardware.Dispensers.Core
         {
             _dispensers = dispensers;
             foreach (IDispenser d in _dispensers)
+            {
                 d.onTest += (sender, e) => onTest?.Invoke(this, new CompositeDispenserTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
+                d.onResponse += (sender, e) => onResponse?.Invoke(sender, e);
+            }
+
             _chainBuilder = chainBuilder ;
             _planogram = planogram;
 

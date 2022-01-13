@@ -9,6 +9,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// <remarks>Can consist of any quantity of single dispensers</remarks>
     public interface ICompositeDispenser
     {
+        event EventHandler<string> onResponse;
+
         event EventHandler<DispenseEventArgs> onDispensing;
 
         event EventHandler<ProductDispensedEventArgs> onDispensingFinished;

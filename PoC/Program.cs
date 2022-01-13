@@ -9,24 +9,31 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace PoC
 {
     class Program
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllocConsole();
+
         static void Main(string[] args)
         {
+            PoCForm form = new PoCForm();
+
             IServiceProvider sp = new ServiceCollection()
                 .AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
                 .AddCompositeDispenser(sp =>
                 {
-                    return new CompositeDispenserBuilder()
+                    ICompositeDispenser compositeDispenser = new CompositeDispenserBuilder()
                     .AddChainBuilder(new DispensingChainBuilder(sp.GetRequiredService<PoG>()))
                         .AddDispensers(() =>
                             {
                                 List<IDispenser> result = new List<IDispenser>();
 
-                                for (int i = 1; i <= 2; i++)
+                                for (int i = 1; i <= 1/* SET 2 to attach the machine № 2 */; i++) 
                                 {
                                     VisionEsPlusSettings settings = new VisionEsPlusSettings
                                     {
@@ -44,11 +51,17 @@ namespace PoC
                             })
                         .AddPlanogram(sp.GetRequiredService<PoG>())
                         .Build();
+
+                    compositeDispenser.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
+                    compositeDispenser.onDispensingFinished += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
+                    compositeDispenser.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e.Message}");
+                    compositeDispenser.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");
+                    return compositeDispenser;
                 }, null)
                 .BuildServiceProvider();
 
-            PoCForm form = new PoCForm();
             form.Initialize(sp.GetRequiredService<PoG>(), sp.GetRequiredService<ICompositeDispenser>());
+            AllocConsole();
             Application.Run(form);
         }
     }

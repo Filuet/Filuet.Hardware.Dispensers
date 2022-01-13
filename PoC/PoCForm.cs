@@ -4,13 +4,9 @@ using Filuet.Hardware.Dispensers.Core;
 using PoC.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Filuet.Infrastructure.Abstractions.Helpers;
@@ -29,7 +25,6 @@ namespace PoC
                     yield return i;
             }
         }
-
 
         public PoCForm()
         {
@@ -58,6 +53,13 @@ namespace PoC
                             Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"Dispenser №{e.Dispenser.Id} {e.Message}");
                     }
                 }));
+
+                if (e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Inoperable)
+                {
+                    IDispenser inoperable = _factDispenser._dispensers.FirstOrDefault(x => x.Id == e.Dispenser.Id);
+                    if (inoperable != null)
+                        inoperable.Reset();
+                }
             };
 
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
@@ -127,10 +129,6 @@ namespace PoC
                 dispenseListBox.Items.RemoveAt(dispenseListBox.SelectedIndex);
         }
 
-        private ICompositeDispenser _dispenser;
-        private PoG _planogram;
-        private CompositeDispenser _factDispenser;
-
         private void dispensersListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             addressesListBox.Items.Clear();
@@ -151,9 +149,12 @@ namespace PoC
             }
         }
 
-        private void Log(LogLevel level, string message)
+        public void Log(LogLevel level, string message)
         {
-            protoTextBox.Text += $"{DateTime.Now:HH:mm:ss} {level} {message}{Environment.NewLine}";
+            Invoke(new MethodInvoker(delegate ()
+            {
+                protoTextBox.Text += $"{DateTime.Now:HH:mm:ss} {level} {message}{Environment.NewLine}";
+            }));
         }
 
         private void retestButton_Click(object sender, EventArgs e)
@@ -163,5 +164,9 @@ namespace PoC
         }
 
         private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
+
+        private ICompositeDispenser _dispenser;
+        private PoG _planogram;
+        private CompositeDispenser _factDispenser;
     }
 }

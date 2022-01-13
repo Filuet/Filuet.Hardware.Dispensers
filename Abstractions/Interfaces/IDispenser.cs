@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
@@ -9,12 +11,15 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     public interface IDispenser
     {
         event EventHandler<DispenserTestEventArgs> onTest;
+        event EventHandler<string> onResponse;
 
         uint Id { get; }
 
         Task Test();
 
         bool Dispense(string address, uint quantity);
+
+        Task<bool> MultiplyDispensing(IDictionary<string, uint> map);
 
         /// <summary>
         /// True means that the address is available
@@ -24,5 +29,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         bool Ping(string address);
 
         uint GetAddressRank(string address);
+
+        void Reset();
     }
 }

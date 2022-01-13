@@ -18,16 +18,25 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlus
     {
+        public event EventHandler<string> onStatus;
         private VisionEsPlusSettings _settings;
-        private readonly byte[] _messagePacket;
-        private byte[] _lastTestResponse;
+        private readonly byte[] _commandBody;
         private ICommunicationChannel _channel;
 
         public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings)
         {
             _settings = settings;
             byte machineAddress = (byte)(Byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
-            _messagePacket = new byte[] { 0x02, 0x30, 0x30, machineAddress /* 0x81*/, 0, 0xff, 0xff, 0, 0, 3 };
+            _commandBody = new byte[] { 0x02 /* start of the message */,
+                0x30 /* Filler1 */,
+                0x30 /* Filler2 */,
+                machineAddress /* Machine address (1-31) 0x81*/,
+                0 /* Type */,
+                0xff /* Param1 */,
+                0xff /* Param2 */,
+                0 /* CheckSum1 */,
+                0  /* CheckSum1 */,
+                0x03  /* End of message */ };
             _channel = channel;
         }
 
@@ -36,7 +45,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         {
             _settings.LightSettings.LightIsOn = isOn;
             //// OnSettingsChanged.Invoke
-            _channel.SendCommand(ChangeLightCommand(isOn));
+            _channel.SendCommand(ChangeLightCommand(isOn), _settings.CommandReadDelay, _settings.Timeout);
         }
 
         internal void Blink(TimeSpan? duration = null)
@@ -46,82 +55,115 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             bool lightIsOn = _settings.LightSettings.LightIsOn;
             while (sw.Elapsed < duration)
             {
-                _channel.SendCommand(ChangeLightCommand(!lightIsOn));
+                _channel.SendCommand(ChangeLightCommand(!lightIsOn), _settings.CommandReadDelay, _settings.Timeout);
                 lightIsOn = !lightIsOn;
                 Thread.Sleep(_settings.LightSettings.BlinkingPeriod);
             }
             sw.Stop();
         }
 
-        internal async Task<(DispenserStateSeverity state, string message)> Status()
-            => await Task.Factory.StartNew<(DispenserStateSeverity state, string message)>(() =>
+        internal void Reset()
+        {
+            lock (_channel)
             {
-                byte[] response = null;
+                _channel.SendCommand(ResetCommand(), _settings.CommandReadDelay, _settings.Timeout);
+            }
+        }
 
-                Func<bool> sendRequest = () =>
+        internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> Status()
+            => await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
+            {
+                byte[] response = _channel.SendCommand(StatusCommand(), _settings.CommandReadDelay, _settings.Timeout);
+
+                if (response == null || response.Length == 0)
                 {
-                    try
-                    {
-                        return TaskHelpers.ExecuteWithTimeLimit(TimeSpan.FromSeconds(5), () =>
-                            response = _channel.SendCommand(StatusCommand()));
-                    }
-                    catch { }
+                    onStatus?.Invoke(this, "No response");
+                    return null;
+                }
 
-                    return false;
-                };
+                onStatus?.Invoke(this, BitConverter.ToString(response).Replace("-", string.Empty));
 
-                if (!sendRequest())
-                    return (DispenserStateSeverity.Inoperable, "Unable to connect");
-
-                if ((response == null || response.Length == 0) && _lastTestResponse != null)
-                    response = _lastTestResponse;
-
-                _lastTestResponse = response;
                 VisionEsPlusResponseCodes code = ParseResponse(response);
-
-                if (code == VisionEsPlusResponseCodes.Unknown && sendRequest()) // need to resend request in case of unknown status
-                    code = ParseResponse(response);
 
                 switch (code)
                 {
                     case VisionEsPlusResponseCodes.Unknown:
-                        return (DispenserStateSeverity.Inoperable, "The machine is inoperable");
+                        return (DispenserStateSeverity.Inoperable, code, "The machine is inoperable");
                     case VisionEsPlusResponseCodes.Ok:
                     case VisionEsPlusResponseCodes.Ready:
                     case VisionEsPlusResponseCodes.FaultIn485Bus:
-                        return (DispenserStateSeverity.Normal, "The machine is connected");
+                        return (DispenserStateSeverity.Normal, code, "The machine is connected");
                     default:
                         switch (TryGetDoorState(response))
                         {
                             case DoorState.DoorClosed:
-                                return (DispenserStateSeverity.Normal, "The door was closed");
+                                return (DispenserStateSeverity.Normal, code, "The door was closed");
                             case DoorState.DoorOpen:
-                                return (DispenserStateSeverity.MaintenanceService, "The door is open");
+                                return (DispenserStateSeverity.MaintenanceService, code, "The door is open");
                             case DoorState.Unknown:
                             default:
-                                return (DispenserStateSeverity.Inoperable, "The machine is inoperable");
+                                return (DispenserStateSeverity.Inoperable, code, "The machine is inoperable");
                         }
                 }
             });
 
-        internal bool DispenseProduct(EspBeltAddress address, uint quantity)
+        internal async Task MultiplyDispensing(IDictionary<EspBeltAddress, uint> map)
         {
-            for (int i = 0; i < quantity; i++)
+            (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await Status();
+
+            if (state?.state != DispenserStateSeverity.Normal)
+                return;
+
+            state = null;
+
+            foreach (var a in map)
             {
-                byte[] response = _channel.SendCommand(VendCommand(address.Tray, address.Belt));
-                VisionEsPlusResponseCodes code = ParseResponse(response);
+                Dispense(a.Key);
+                while (state == null)
+                {
+                    state = await Status(); // Wait for the next not empty state (it means state of the dispensing command) 
+                }
+
+                if (state?.state == DispenserStateSeverity.Normal) // If product was dispensed successfully
+                {
+                    // Check if the machine ready to handle next command
+                    state = null;
+                    state = await Status();
+
+                    if (state?.state != DispenserStateSeverity.Normal) // The machine is in error state
+                    {
+                        //....
+                    }
+                }
             }
 
-            return true;
+            // Up to this moment we have deispensed products. Now we must send the elevator to the parking lot:
+            _channel.SendCommand(ParkingCommand(), _settings.CommandReadDelay, _settings.Timeout);
+            // Send status until receive 0x4F (W. F. P. TO BE REMOVED)
+            // Send status until receive 0x06 0x30 (Ready) Standby mode that mean the products have been dispensed
+        }
+
+        private void Dispense(EspBeltAddress address)
+        {
+            byte[] response = _channel.SendCommand(DispenseCommand(address.Tray, address.Belt, true), _settings.CommandReadDelay, _settings.Timeout);
+                //VisionEsPlusResponseCodes code = ParseResponse(response);
         }
 
         internal bool IsBeltAvailable(string route)
         {
             EspBeltAddress address = (EspBeltAddress)route;
 
-            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
+            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt), _settings.CommandReadDelay, _settings.Timeout);
 
             return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
+        }
+
+        public DoorState TryGetDoorState(byte[] arr)
+        {
+            if (arr == null || arr.Length != 7 || arr[2] != 0x50)
+                return DoorState.Unknown;
+            var doorState = (DoorState)arr[3];
+            return doorState;
         }
         #endregion
 
@@ -132,8 +174,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns>команда</returns>
         private byte[] ChangeLightCommand(bool isOn)
         {
-            var comm = new byte[_messagePacket.Length];
-            Array.Copy(_messagePacket, comm, _messagePacket.Length);
+            var comm = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x4c;
             if (isOn)
                 comm[5] = 0x81;
@@ -148,8 +190,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns>команда</returns>
         private byte[] StatusCommand()
         {
-            var comm = new byte[_messagePacket.Length];
-            Array.Copy(_messagePacket, comm, _messagePacket.Length);
+            var comm = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x53;
             InjectCheckSumm(comm);
             return comm;
@@ -161,8 +203,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns>команда</returns>
         private byte[] CheckChannelCommand(int tray, int belt)
         {
-            var comm = new byte[_messagePacket.Length];
-            Array.Copy(_messagePacket, comm, _messagePacket.Length);
+            var comm = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x43;
             comm[5] = 0x43;
             comm[6] = (byte)(tray * 10 + belt);
@@ -171,16 +213,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         /// <summary>
-        ///     Выдача товара с парковкой лифта
+        /// Extracting with parking
         /// </summary>
         /// <param name="tray"></param>
         /// <param name="belt"></param>
         /// <returns></returns>
-        private byte[] VendCommand(int tray, int belt)
+        private byte[] DispenseCommand(int tray, int belt, bool isMultiplyDispensing)
         {
-            var retval = new byte[_messagePacket.Length];
-            Array.Copy(_messagePacket, retval, _messagePacket.Length);
-            retval[4] = 0x56;
+            var retval = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, retval, _commandBody.Length);
+            retval[4] = 0x56; // So called vend command
+            if (isMultiplyDispensing)
+                retval[4] = 0x4D; // Multiply dispense command
             retval[5] = (byte)(tray + 0x80);
             retval[6] = (byte)(belt + 0x80);
             InjectCheckSumm(retval);
@@ -188,21 +232,31 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         /// <summary>
-        ///     Паркует лифт для выдачи, если есть что выдавать.
+        /// Parks the lift is anything to extract
         /// </summary>
-        /// <returns>команда</returns>
-        private byte[] Parking()
+        /// <returns></returns>
+        private byte[] ParkingCommand()
         {
-            ////lock (Locker)
-            ////{
-            var retval = new byte[_messagePacket.Length];
-            Array.Copy(_messagePacket, retval, _messagePacket.Length);
+            var retval = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x4d;
             retval[5] = 0x80;
             retval[6] = 0x80;
             InjectCheckSumm(retval);
             return retval;
-            ////}
+        }
+
+        /// <summary>
+        /// Resets the machine
+        /// </summary>
+        /// <returns></returns>
+        private byte[] ResetCommand()
+        {
+            var retval = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, retval, _commandBody.Length);
+            retval[4] = 0x52;
+            InjectCheckSumm(retval);
+            return retval;
         }
         #endregion
 
@@ -226,19 +280,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         /// <param name="response"></param>
         private VisionEsPlusResponseCodes ParseResponse(IReadOnlyList<byte> response)
-        {
-            if (response != null && (response.Count > 10 || response.Count == 0))
-                return VisionEsPlusResponseCodes.Unknown;
-            return response == null ? VisionEsPlusResponseCodes.Unknown : (VisionEsPlusResponseCodes)response[response.Count - 1];
-        }
-
-        public DoorState TryGetDoorState(byte[] arr)
-        {
-            if (arr == null || arr.Length != 7 || arr[2] != 0x50)
-                return DoorState.Unknown;
-            var doorState = (DoorState)arr[3];
-            return doorState;
-        }
+            => response == null || (response != null && (response.Count > 10 || response.Count == 0)) ?
+                VisionEsPlusResponseCodes.Unknown : (VisionEsPlusResponseCodes)response[response.Count - 1];
         #endregion
     }
 }

@@ -61,9 +61,9 @@ namespace PoC
             this.dispensersListBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.dispensersListBox.FormattingEnabled = true;
             this.dispensersListBox.ItemHeight = 15;
-            this.dispensersListBox.Location = new System.Drawing.Point(465, 51);
+            this.dispensersListBox.Location = new System.Drawing.Point(538, 51);
             this.dispensersListBox.Name = "dispensersListBox";
-            this.dispensersListBox.Size = new System.Drawing.Size(150, 79);
+            this.dispensersListBox.Size = new System.Drawing.Size(178, 79);
             this.dispensersListBox.TabIndex = 0;
             this.dispensersListBox.SelectedIndexChanged += new System.EventHandler(this.dispensersListBox_SelectedIndexChanged);
             // 
@@ -71,7 +71,7 @@ namespace PoC
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(460, 3);
+            this.label1.Location = new System.Drawing.Point(533, 3);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(63, 15);
             this.label1.TabIndex = 1;
@@ -83,9 +83,9 @@ namespace PoC
             | System.Windows.Forms.AnchorStyles.Right)));
             this.addressesListBox.FormattingEnabled = true;
             this.addressesListBox.ItemHeight = 15;
-            this.addressesListBox.Location = new System.Drawing.Point(465, 134);
+            this.addressesListBox.Location = new System.Drawing.Point(538, 134);
             this.addressesListBox.Name = "addressesListBox";
-            this.addressesListBox.Size = new System.Drawing.Size(150, 289);
+            this.addressesListBox.Size = new System.Drawing.Size(178, 289);
             this.addressesListBox.TabIndex = 3;
             // 
             // tabControl1
@@ -96,7 +96,7 @@ namespace PoC
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(648, 459);
+            this.tabControl1.Size = new System.Drawing.Size(730, 459);
             this.tabControl1.TabIndex = 5;
             // 
             // tabPage1
@@ -111,7 +111,7 @@ namespace PoC
             this.tabPage1.Location = new System.Drawing.Point(4, 24);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(640, 431);
+            this.tabPage1.Size = new System.Drawing.Size(722, 431);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Dispensing";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -120,7 +120,7 @@ namespace PoC
             // 
             this.retestButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.retestButton.Enabled = false;
-            this.retestButton.Location = new System.Drawing.Point(465, 21);
+            this.retestButton.Location = new System.Drawing.Point(538, 21);
             this.retestButton.Name = "retestButton";
             this.retestButton.Size = new System.Drawing.Size(58, 23);
             this.retestButton.TabIndex = 14;
@@ -145,7 +145,7 @@ namespace PoC
             | System.Windows.Forms.AnchorStyles.Right)));
             this.protoTextBox.Location = new System.Drawing.Point(3, 140);
             this.protoTextBox.Name = "protoTextBox";
-            this.protoTextBox.Size = new System.Drawing.Size(456, 284);
+            this.protoTextBox.Size = new System.Drawing.Size(529, 284);
             this.protoTextBox.TabIndex = 13;
             this.protoTextBox.Text = "";
             // 
@@ -163,7 +163,7 @@ namespace PoC
             this.groupBox1.Controls.Add(this.skuComboBox);
             this.groupBox1.Location = new System.Drawing.Point(3, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(456, 102);
+            this.groupBox1.Size = new System.Drawing.Size(529, 102);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Goods list";
@@ -202,7 +202,7 @@ namespace PoC
             // removeItemButton
             // 
             this.removeItemButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.removeItemButton.Location = new System.Drawing.Point(371, 14);
+            this.removeItemButton.Location = new System.Drawing.Point(435, 14);
             this.removeItemButton.Name = "removeItemButton";
             this.removeItemButton.Size = new System.Drawing.Size(60, 23);
             this.removeItemButton.TabIndex = 9;
@@ -227,7 +227,7 @@ namespace PoC
             this.dispenseListBox.ItemHeight = 15;
             this.dispenseListBox.Location = new System.Drawing.Point(282, 15);
             this.dispenseListBox.Name = "dispenseListBox";
-            this.dispenseListBox.Size = new System.Drawing.Size(85, 79);
+            this.dispenseListBox.Size = new System.Drawing.Size(149, 79);
             this.dispenseListBox.TabIndex = 6;
             // 
             // addSkuButton
@@ -264,7 +264,7 @@ namespace PoC
             this.tabPage2.Location = new System.Drawing.Point(4, 24);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(662, 431);
+            this.tabPage2.Size = new System.Drawing.Size(722, 431);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Planogram";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -296,7 +296,7 @@ namespace PoC
             this.AcceptButton = this.dispenseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(648, 459);
+            this.ClientSize = new System.Drawing.Size(730, 459);
             this.Controls.Add(this.tabControl1);
             this.Name = "PoCForm";
             this.Text = "Dispensing PoC";
