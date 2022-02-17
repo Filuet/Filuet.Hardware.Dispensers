@@ -1,5 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
+using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusVendingMachine : IDispenser
     {
+        public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<DispenserTestEventArgs> onTest;
         public event EventHandler<string> onResponse;
         private VisionEsPlus _machineAdapter;
@@ -22,7 +24,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         public async Task Test()
         {
-            (DispenserStateSeverity severity, string message)? testResult = await _machineAdapter.Status();
+            (DispenserStateSeverity severity, VisionEsPlusResponseCodes origin, string message)? testResult = await _machineAdapter.Status();
 
             if (testResult.HasValue)
             {
@@ -32,29 +34,19 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         // There is no use to dispense one by one
-        //public bool Dispense(string address, uint quantity)
-        //{
-        //    var t = _machineAdapter.Status();
-        //    bool result = _machineAdapter.DispenseProduct(address, quantity);
-        //    var t1 = _machineAdapter.Status();
-
-        //    return result;
-        //}        
+        public async Task Dispense(string address, uint quantity)
+            => await _machineAdapter.MultiplyDispensing(address, quantity);    
 
         /// <summary>
         /// Be sure that common weight of the products to be dispensed must be less than weight threshold of the elevator
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public async Task<bool> MultiplyDispensing(IDictionary<string, uint> map)
-        {
-            await _machineAdapter.MultiplyDispensing(map.ToDictionary(x=> (Models.EspBeltAddress)x.Key, x=>x.Value));
-
-            return true;
-        }
+        public async Task MultiplyDispensing(IDictionary<string, uint> map)
+            => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
 
         public bool Ping(string address)
-            => !_isAvailable ? false : _machineAdapter.IsBeltAvailable(address);
+            => !_isAvailable ? false : _machineAdapter.IsBeltAvailable(Id, address);
 
         public uint GetAddressRank(string address)
         {
@@ -72,7 +64,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.Reset();
         }
 
-        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]";
+        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. { (_isAvailable ? "Available" : "Unavailable") }";
+
         public uint Id { get; private set; }
 
         public bool _isAvailable = false;

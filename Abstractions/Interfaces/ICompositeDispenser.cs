@@ -11,7 +11,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     {
         event EventHandler<string> onResponse;
 
-        event EventHandler<DispenseEventArgs> onDispensing;
+        event EventHandler<DispenseEventArgs> onDispensed;
 
         event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
 

@@ -10,6 +10,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// </summary>
     public interface IDispenser
     {
+        event EventHandler<DispenseEventArgs> onDispensed;
         event EventHandler<DispenserTestEventArgs> onTest;
         event EventHandler<string> onResponse;
 
@@ -17,9 +18,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         Task Test();
 
-        bool Dispense(string address, uint quantity);
+        Task Dispense(string address, uint quantity);
 
-        Task<bool> MultiplyDispensing(IDictionary<string, uint> map);
+        Task MultiplyDispensing(IDictionary<string, uint> map);
 
         /// <summary>
         /// True means that the address is available

@@ -33,26 +33,38 @@ namespace PoC
                             {
                                 List<IDispenser> result = new List<IDispenser>();
 
-                                for (int i = 1; i <= 1/* SET 2 to attach the machine № 2 */; i++) 
+                                #region Machine1
+                                VisionEsPlusSettings settings1 = new VisionEsPlusSettings
                                 {
-                                    VisionEsPlusSettings settings = new VisionEsPlusSettings
-                                    {
-                                        PortNumber = (ushort)5051,
-                                        Address = string.Format("0x{0:X2}", i), // "0x01",
-                                        IpAddress = "172.16.7.103"
-                                    };
+                                    PortNumber = (ushort)5050,
+                                    Address = string.Format("0x{0:X2}", 1), // "0x01",
+                                    IpAddress = "172.16.7.103"
+                                };
 
-                                    ICommunicationChannel channel = new TcpChannel(settings.IpAddress, settings.PortNumber);
+                                ICommunicationChannel channel1 = new TcpChannel(settings1.IpAddress, settings1.PortNumber);
 
-                                    result.Add(new VisionEsPlusVendingMachine((uint)i, new VisionEsPlus(channel, settings)));
-                                }
+                                result.Add(new VisionEsPlusVendingMachine(1, new VisionEsPlus(channel1, settings1)));
+                                #endregion
+
+                                #region Machine2
+                                VisionEsPlusSettings settings2 = new VisionEsPlusSettings
+                                {
+                                    PortNumber = (ushort)5051,
+                                    Address = string.Format("0x{0:X2}", 1), // "0x01",
+                                    IpAddress = "172.16.7.103"
+                                };
+
+                                ICommunicationChannel channel2 = new TcpChannel(settings2.IpAddress, settings2.PortNumber);
+
+                                result.Add(new VisionEsPlusVendingMachine(2, new VisionEsPlus(channel2, settings2)));
+                                #endregion
 
                                 return result;
                             })
                         .AddPlanogram(sp.GetRequiredService<PoG>())
                         .Build();
 
-                    compositeDispenser.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
+                    compositeDispenser.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
                     compositeDispenser.onDispensingFinished += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
                     compositeDispenser.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e.Message}");
                     compositeDispenser.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");

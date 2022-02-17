@@ -46,7 +46,7 @@ namespace PoC
 
                     foreach (var d in _factDispenser._dispensers)
                     {
-                        if (MachineIdIsAvailable[d.Id])
+                        if (MachineIdIsAvailable.ContainsKey(d.Id))
                             dispensersListBox.Items.Add(d);
 
                         if (d.Id == e.Dispenser.Id)
@@ -54,26 +54,26 @@ namespace PoC
                     }
                 }));
 
-                if (e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Inoperable)
-                {
-                    IDispenser inoperable = _factDispenser._dispensers.FirstOrDefault(x => x.Id == e.Dispenser.Id);
-                    if (inoperable != null)
-                        inoperable.Reset();
-                }
+                //if (e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Inoperable)
+                //{
+                //    IDispenser inoperable = _factDispenser._dispensers.FirstOrDefault(x => x.Id == e.Dispenser.Id);
+                //    if (inoperable != null)
+                //        inoperable.Reset();
+                //}
             };
 
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
             skuComboBox.SelectedIndex = 0;
 
             _factDispenser = (CompositeDispenser)_dispenser;
-            foreach (var d in _factDispenser._dispensers)
-            {
-                MachineIdIsAvailable[d.Id] = true;
-                dispensersListBox.Items.Add(d);
-            }
+            //foreach (var d in _factDispenser._dispensers)
+            //{
+            //    MachineIdIsAvailable[d.Id] = false;
+            //    dispensersListBox.Items.Add(d);
+            //}
 
-            if (dispensersListBox.Items.Count == 1)
-                dispensersListBox.SelectedIndex = 0;
+            //if (dispensersListBox.Items.Count == 1)
+            //    dispensersListBox.SelectedIndex = 0;
 
             planogramRichTextBox.Text = planogram.ToString();
 
@@ -160,7 +160,24 @@ namespace PoC
         private void retestButton_Click(object sender, EventArgs e)
         {
             retestButton.Enabled = false;
-            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate () { retestButton.Enabled = true; })));
+            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate () {
+                retestButton.Enabled = true;
+
+            })));
+        }
+
+        /// <summary>
+        /// Ping addresses
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void dispenseListBox_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (dispenseListBox.SelectedItem != null)
+            {
+                ItemToDispense toD = (ItemToDispense)dispenseListBox.SelectedItem;
+                MessageBox.Show(System.Text.Json.JsonSerializer.Serialize(toD.Product.Routes));
+            }
         }
 
         private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
@@ -168,5 +185,15 @@ namespace PoC
         private ICompositeDispenser _dispenser;
         private PoG _planogram;
         private CompositeDispenser _factDispenser;
+
+        private void dispensersListBox_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (MessageBox.Show("Do you really want to reset the machine?", "Reset", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+            {
+                IDispenser d = dispensersListBox.SelectedItem as IDispenser;
+                if (d != null)
+                    d.Reset();
+            }
+        }
     }
 }

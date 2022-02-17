@@ -66,6 +66,7 @@ namespace PoC
             this.dispensersListBox.Size = new System.Drawing.Size(178, 79);
             this.dispensersListBox.TabIndex = 0;
             this.dispensersListBox.SelectedIndexChanged += new System.EventHandler(this.dispensersListBox_SelectedIndexChanged);
+            this.dispensersListBox.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dispensersListBox_MouseDoubleClick);
             // 
             // label1
             // 
@@ -229,6 +230,7 @@ namespace PoC
             this.dispenseListBox.Name = "dispenseListBox";
             this.dispenseListBox.Size = new System.Drawing.Size(149, 79);
             this.dispenseListBox.TabIndex = 6;
+            this.dispenseListBox.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dispenseListBox_MouseDoubleClick);
             // 
             // addSkuButton
             // 
@@ -272,7 +274,7 @@ namespace PoC
             // savePlanogramButton
             // 
             this.savePlanogramButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.savePlanogramButton.Location = new System.Drawing.Point(562, 405);
+            this.savePlanogramButton.Location = new System.Drawing.Point(644, 405);
             this.savePlanogramButton.Name = "savePlanogramButton";
             this.savePlanogramButton.Size = new System.Drawing.Size(75, 23);
             this.savePlanogramButton.TabIndex = 1;
@@ -287,7 +289,7 @@ namespace PoC
             | System.Windows.Forms.AnchorStyles.Right)));
             this.planogramRichTextBox.Location = new System.Drawing.Point(3, 3);
             this.planogramRichTextBox.Name = "planogramRichTextBox";
-            this.planogramRichTextBox.Size = new System.Drawing.Size(634, 396);
+            this.planogramRichTextBox.Size = new System.Drawing.Size(716, 396);
             this.planogramRichTextBox.TabIndex = 0;
             this.planogramRichTextBox.Text = "";
             // 
