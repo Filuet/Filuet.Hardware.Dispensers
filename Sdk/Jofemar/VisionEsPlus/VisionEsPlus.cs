@@ -46,8 +46,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         internal void ChangeLight(bool isOn)
         {
             _settings.LightSettings.LightIsOn = isOn;
-            //// OnSettingsChanged.Invoke
-            _channel.SendCommand(ChangeLightCommand(isOn), _settings.CommandReadDelay, _settings.Timeout);
+            _channel.SendCommand(ChangeLightCommand(isOn));
         }
 
         internal void Blink(TimeSpan? duration = null)
@@ -57,7 +56,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             bool lightIsOn = _settings.LightSettings.LightIsOn;
             while (sw.Elapsed < duration)
             {
-                _channel.SendCommand(ChangeLightCommand(!lightIsOn), _settings.CommandReadDelay, _settings.Timeout);
+                _channel.SendCommand(ChangeLightCommand(!lightIsOn));
                 lightIsOn = !lightIsOn;
                 Thread.Sleep(_settings.LightSettings.BlinkingPeriod);
             }
@@ -68,7 +67,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         {
             lock (_channel)
             {
-                _channel.SendCommand(ResetCommand(), _settings.CommandReadDelay, _settings.Timeout);
+                _channel.SendCommand(ResetCommand());
             }
         }
 
@@ -79,7 +78,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 try
                 {
-                    response = _channel.SendCommand(StatusCommand(), _settings.CommandReadDelay, _settings.Timeout);
+                    response = _channel.SendCommand(StatusCommand());
                 }
                 catch (SocketException)
                 { }
@@ -158,16 +157,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     }
                 }
             }
-
-            // Up to this moment we have deispensed products. Now we must send the elevator to the parking lot:
-            ////////////_channel.SendCommand(ParkingCommand(), _settings.CommandReadDelay, _settings.Timeout);
-            // Send status until receive 0x4F (W. F. P. TO BE REMOVED)
-            // Send status until receive 0x06 0x30 (Ready) Standby mode that mean the products have been dispensed
+ 
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
         {
-            byte[] response = _channel.SendCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), _settings.CommandReadDelay, _settings.Timeout);
+            byte[] response = _channel.SendCommand(DispenseCommand(address.Tray, address.Belt, lastCommand));
                 //VisionEsPlusResponseCodes code = ParseResponse(response);
         }
 
@@ -178,7 +173,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             if (address.Machine != machineId) // The route belongs to another machine
                 return false;
 
-            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt), _settings.CommandReadDelay, _settings.Timeout);
+            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
 
             return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
         }
