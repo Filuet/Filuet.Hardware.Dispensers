@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Net;
 
 namespace PoC
 {
@@ -54,7 +55,7 @@ namespace PoC
                                     IpAddress = "172.16.7.103"
                                 };
 
-                                ICommunicationChannel channel2 = new TcpChannel(settings2.IpAddress, settings2.PortNumber);
+                                    ICommunicationChannel channel = new TcpChannel(settings.IpAddress, settings.PortNumber);
 
                                 result.Add(new VisionEsPlusVendingMachine(2, new VisionEsPlus(channel2, settings2)));
                                 #endregion
@@ -67,7 +68,7 @@ namespace PoC
                     compositeDispenser.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
                     compositeDispenser.onDispensingFinished += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
                     compositeDispenser.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e.Message}");
-                    compositeDispenser.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");
+                    ////compositeDispenser.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");
                     return compositeDispenser;
                 }, null)
                 .BuildServiceProvider();
