@@ -83,20 +83,6 @@ namespace Filuet.Hardware.Dispensers.Core
                     });
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
-                    //foreach (string route in routes ?? _planogram.Addresses)
-                    //{
-                    //    bool isRouteAvailable = false;
-                    //    IDispenser correspondentDispenser = null;
-                    //    foreach (IDispenser dispenser in _dispensers)
-                    //        if (dispenser.Ping(route))
-                    //        {
-                    //            correspondentDispenser = dispenser;
-                    //            isRouteAvailable = true;
-                    //            break;
-                    //        }
-
-                    //    _planogram.SetAttributes(route, correspondentDispenser, isRouteAvailable);
-                    //}
                     sw.Stop();
                     Console.WriteLine($"Diagnostic time: {sw.Elapsed.TotalSeconds} sec");
                 });

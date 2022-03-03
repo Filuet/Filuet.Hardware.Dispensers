@@ -44,7 +44,8 @@ namespace PoC
                                     IpAddress = "172.16.7.103"
                                 };
 
-                                ICommunicationChannel channel1 = new TcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpAddress), settings1.PortNumber); });
+                                ICommunicationChannel channel1 = new TcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpAddress), settings1.PortNumber);
+                                    s.ReadDelay = TimeSpan.FromMilliseconds(50);  });
 
                                 result.Add(new VisionEsPlusVendingMachine(1, new VisionEsPlus(channel1, settings1)));
                                 #endregion

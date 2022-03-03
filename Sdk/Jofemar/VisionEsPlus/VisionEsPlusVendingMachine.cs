@@ -49,7 +49,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public IEnumerable<(string, bool)> Ping(params string[] addresses)
         {
             foreach (string address in addresses)
-               yield return  (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
+               yield return (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
         }
 
         public uint GetAddressRank(string address)
