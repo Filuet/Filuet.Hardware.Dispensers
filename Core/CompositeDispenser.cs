@@ -3,6 +3,7 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core.Strategy;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -65,6 +66,9 @@ namespace Filuet.Hardware.Dispensers.Core
         private async Task PingRoutes(IEnumerable<string> routes = null)
             => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
                 .ContinueWith(x => {
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
                     foreach (string route in routes ?? _planogram.Addresses)
                     {
                         bool isRouteAvailable = false;
@@ -79,6 +83,9 @@ namespace Filuet.Hardware.Dispensers.Core
 
                         _planogram.SetAttributes(route, correspondentDispenser, isRouteAvailable);
                     }
+                    sw.Stop();
+
+                    Console.WriteLine(sw.Elapsed.TotalSeconds);
                 });
 
         internal readonly IEnumerable<IDispenser> _dispensers;
