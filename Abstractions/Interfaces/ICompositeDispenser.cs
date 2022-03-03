@@ -17,6 +17,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         event EventHandler<CompositeDispenserTestEventArgs> onTest;
 
+        event EventHandler<PlanogramEventArgs> onPlanogramClarification;
+
         Task Dispense(params (string productUid, ushort quantity)[] items);
 
         Task Test();

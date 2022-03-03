@@ -22,6 +22,8 @@ namespace PoC
 
         static void Main(string[] args)
         {
+            AllocConsole();
+
             PoCForm form = new PoCForm();
 
             IServiceProvider sp = new ServiceCollection()
@@ -74,7 +76,7 @@ namespace PoC
                 .BuildServiceProvider();
 
             form.Initialize(sp.GetRequiredService<PoG>(), sp.GetRequiredService<ICompositeDispenser>());
-            AllocConsole();
+
             Application.Run(form);
         }
     }

@@ -62,6 +62,11 @@ namespace PoC
                 //}
             };
 
+            _dispenser.onPlanogramClarification += (sender, e) => {
+                _planogram = e.Planogram;
+                planogramRichTextBox.Text = planogram.ToString();
+            };
+
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
             skuComboBox.SelectedIndex = 0;
 
@@ -75,7 +80,7 @@ namespace PoC
             //if (dispensersListBox.Items.Count == 1)
             //    dispensersListBox.SelectedIndex = 0;
 
-            planogramRichTextBox.Text = planogram.ToString();
+            planogramRichTextBox.Text = _planogram.ToString();
 
             Task.Factory.StartNew(() =>
             {
@@ -85,6 +90,11 @@ namespace PoC
                     retestButton.Enabled = true;
                 }));
             });
+        }
+
+        private void _dispenser_onPlanogramClarification(object sender, PlanogramEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void dispenseButton_Click(object sender, EventArgs e)
