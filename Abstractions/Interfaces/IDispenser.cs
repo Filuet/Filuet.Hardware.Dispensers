@@ -33,5 +33,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         uint GetAddressRank(string address);
 
         void Reset();
+
+        /// <summary>
+        /// Open door or something
+        /// </summary>
+        void Unlock();
     }
 }

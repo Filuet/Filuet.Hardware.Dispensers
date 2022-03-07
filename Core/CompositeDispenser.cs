@@ -37,11 +37,8 @@ namespace Filuet.Hardware.Dispensers.Core
             _chainBuilder = chainBuilder;
             _planogram = planogram;
 
-            PingRoutes();
+            Test();
         }
-
-        public async Task Test() =>
-            await PingRoutes();
 
         public async Task Dispense(params (string productUid, ushort quantity)[] items)
         {
@@ -49,22 +46,37 @@ namespace Filuet.Hardware.Dispensers.Core
             foreach (var i in items)
                 routesToPing.AddRange(_planogram[i.productUid].Addresses);
 
-            await PingRoutes(routesToPing);
-
-            IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address =>
+            try
             {
-                PoGRoute route = _planogram.GetRoute(address);
-                return route.Dispenser.GetAddressRank(address);
-            });
+                await Test(); // update status of dispenser
 
-            //foreach (DispenseCommand command in dispensingChain)
-            //    await command.Route.Dispenser.Dispense(command.Route.Address, command.Quantity);
+                IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address =>
+                {
+                    PoGRoute route = _planogram.GetRoute(address);
+                    return route.Dispenser.GetAddressRank(address);
+                }, x => PingRoute(x));
 
-            IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
+                IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
 
-            foreach (var dispenser in dispensers)
-                await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+                foreach (var dispenser in dispensers)
+                    await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+            }
+            catch (InvalidOperationException ex)
+            {
+                onFailed?.Invoke(this, new DispenseFailEventArgs { message = ex.Message });
+            }
         }
+
+        public void Unlock(params uint[] machines)
+        {
+            Parallel.ForEach(_dispensers, x =>
+            {
+                if (!machines.Any() || machines.Contains(x.Id))
+                    x.Unlock();
+            });
+        }
+
+        public async Task Test() => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray());
 
         private async Task PingRoutes(IEnumerable<string> routes = null)
             => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
@@ -75,17 +87,39 @@ namespace Filuet.Hardware.Dispensers.Core
 
                     Parallel.ForEach(_dispensers, d =>
                     {
-                        foreach (var a in d.Ping(_planogram.Addresses.ToArray()))
-                        {
+                        var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();
+                        foreach (var a in pingResult)
                             if (a.Item2)
                                 _planogram.SetAttributes(a.Item1, d, true);
-                        }
                     });
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
                     sw.Stop();
                     Console.WriteLine($"Diagnostic time: {sw.Elapsed.TotalSeconds} sec");
                 });
+
+        private bool PingRoute(string route)
+        {
+            bool isAvailable = false;
+
+            foreach (var d in _dispensers)
+            {
+                if (!d.IsAvailable)
+                    continue;
+
+                var pingResult = d.Ping(route);
+                foreach (var a in pingResult)
+                    if (a.Item2)
+                    {
+                        isAvailable = true;
+                        _planogram.SetAttributes(a.Item1, d, true);
+                    }
+            }
+
+            onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+
+            return isAvailable;
+        }
 
         internal readonly IEnumerable<IDispenser> _dispensers;
         private readonly DispensingChainBuilder _chainBuilder;

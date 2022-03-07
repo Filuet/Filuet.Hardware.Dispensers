@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Core.Strategy
 {
@@ -9,9 +10,12 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
     {
         public DispensingChainBuilder(PoG planogram) { _planogram = planogram; }
 
-        public IEnumerable<DispenseCommand> BuildChain((string productUid, ushort quantity)[] cart, Func<string, uint> getRankByRoute)
+        public IEnumerable<DispenseCommand> BuildChain((string productUid, ushort quantity)[] cart, Func<string, uint> getRankByRoute, 
+            Func<string, bool> isRouteAvailable)
         {
             Dictionary<string /*address*/, ushort /*qty*/> addressesToDispense = new Dictionary<string, ushort>();
+
+            Parallel.ForEach(_planogram.Products.SelectMany(x => x.Routes), r => r.Active = true); // Consider all belts as available before next extract
 
             foreach (var item in cart)
             {
@@ -25,12 +29,25 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
                 ushort reserved = 0;
                 Dictionary<string /*address*/, ushort /*qty*/> slots = routes.Select(x => (x.Address, x.Quantity)).OrderByDescending(x => x.Quantity).ToDictionary(x => x.Address, x => x.Quantity);
 
+                if (!slots.Any())
+                    throw new InvalidOperationException($"Unable to extract {item.productUid}");
+
+                ushort previousMaxQty = 0;
+
                 while (true)
                 {
-                    ushort maxQty = slots.First().Value;
+                    ushort maxQty = previousMaxQty == 0 ? slots.First().Value : (slots.FirstOrDefault(x => x.Value < previousMaxQty).Value);
+
+                    if (maxQty == previousMaxQty || maxQty == 0) // Prevent infinite loop (failed to collect quantity required)
+                        break;
+
+                    previousMaxQty = maxQty;
 
                     foreach (var s in slots.Where(x => x.Value == maxQty))
                     {
+                        if (!isRouteAvailable(s.Key))
+                            continue;
+
                         slots[s.Key]--;
                         reserved++;
                         if (addressesToDispense.ContainsKey(s.Key))
@@ -46,7 +63,7 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
                 }
             }
 
-            if (addressesToDispense.Select(x=>x.Value).Sum(x => x) != cart.Sum(x => x.quantity))
+            if (addressesToDispense.Select(x => x.Value).Sum(x => x) != cart.Sum(x => x.quantity))
                 throw new InvalidOperationException("An error occured while building the chain of dispensing");
 
             addressesToDispense = addressesToDispense.OrderBy(x => getRankByRoute(x.Key)).ToDictionary(x => x.Key, x => x.Value);

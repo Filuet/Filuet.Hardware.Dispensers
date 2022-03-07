@@ -34,6 +34,7 @@ namespace PoC
             this.addressesListBox = new System.Windows.Forms.ListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.unlockButton = new System.Windows.Forms.Button();
             this.retestButton = new System.Windows.Forms.Button();
             this.dispenseButton = new System.Windows.Forms.Button();
             this.protoTextBox = new System.Windows.Forms.RichTextBox();
@@ -49,6 +50,7 @@ namespace PoC
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.savePlanogramButton = new System.Windows.Forms.Button();
             this.planogramRichTextBox = new System.Windows.Forms.RichTextBox();
+            this.resetButton = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -61,9 +63,10 @@ namespace PoC
             this.dispensersListBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.dispensersListBox.FormattingEnabled = true;
             this.dispensersListBox.ItemHeight = 15;
-            this.dispensersListBox.Location = new System.Drawing.Point(538, 51);
+            this.dispensersListBox.Location = new System.Drawing.Point(538, 66);
             this.dispensersListBox.Name = "dispensersListBox";
-            this.dispensersListBox.Size = new System.Drawing.Size(178, 79);
+            this.dispensersListBox.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
+            this.dispensersListBox.Size = new System.Drawing.Size(178, 64);
             this.dispensersListBox.TabIndex = 0;
             this.dispensersListBox.SelectedIndexChanged += new System.EventHandler(this.dispensersListBox_SelectedIndexChanged);
             this.dispensersListBox.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dispensersListBox_MouseDoubleClick);
@@ -102,6 +105,8 @@ namespace PoC
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.resetButton);
+            this.tabPage1.Controls.Add(this.unlockButton);
             this.tabPage1.Controls.Add(this.retestButton);
             this.tabPage1.Controls.Add(this.dispenseButton);
             this.tabPage1.Controls.Add(this.protoTextBox);
@@ -116,6 +121,17 @@ namespace PoC
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Dispensing";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // unlockButton
+            // 
+            this.unlockButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.unlockButton.Location = new System.Drawing.Point(600, 21);
+            this.unlockButton.Name = "unlockButton";
+            this.unlockButton.Size = new System.Drawing.Size(58, 23);
+            this.unlockButton.TabIndex = 15;
+            this.unlockButton.Text = "Unlock";
+            this.unlockButton.UseVisualStyleBackColor = true;
+            this.unlockButton.Click += new System.EventHandler(this.unlockButton_Click);
             // 
             // retestButton
             // 
@@ -293,6 +309,17 @@ namespace PoC
             this.planogramRichTextBox.TabIndex = 0;
             this.planogramRichTextBox.Text = "";
             // 
+            // resetButton
+            // 
+            this.resetButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.resetButton.Location = new System.Drawing.Point(662, 21);
+            this.resetButton.Name = "resetButton";
+            this.resetButton.Size = new System.Drawing.Size(58, 23);
+            this.resetButton.TabIndex = 16;
+            this.resetButton.Text = "Reset";
+            this.resetButton.UseVisualStyleBackColor = true;
+            this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
+            // 
             // PoCForm
             // 
             this.AcceptButton = this.dispenseButton;
@@ -335,5 +362,7 @@ namespace PoC
         private System.Windows.Forms.Button savePlanogramButton;
         private System.Windows.Forms.RichTextBox planogramRichTextBox;
         private System.Windows.Forms.Button retestButton;
+        private System.Windows.Forms.Button unlockButton;
+        private System.Windows.Forms.Button resetButton;
     }
 }

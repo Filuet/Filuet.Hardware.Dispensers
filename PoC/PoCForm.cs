@@ -62,9 +62,20 @@ namespace PoC
                 //}
             };
 
+            _dispenser.onFailed += (sender, e) => {
+                Console.WriteLine(e.message);
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    Log(LogLevel.Error, e.message);
+                }));
+            };
+
             _dispenser.onPlanogramClarification += (sender, e) => {
                 _planogram = e.Planogram;
-                planogramRichTextBox.Text = planogram.ToString();
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    planogramRichTextBox.Text = planogram.ToString();
+                }));
             };
 
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
@@ -144,11 +155,14 @@ namespace PoC
             addressesListBox.Items.Clear();
             IDispenser selectedDispenser = dispensersListBox.SelectedItem as IDispenser;
 
-            IEnumerable<PoGRoute> routes =
-                _factDispenser._planogram.GetRoutes(selectedDispenser.Id);
+            if (selectedDispenser != null)
+            {
+                IEnumerable<PoGRoute> routes =
+                    _factDispenser._planogram.GetRoutes(selectedDispenser.Id);
 
-            foreach (var r in routes)
-                addressesListBox.Items.Add($"{r} of {_planogram.GetProduct(r.Address).ProductUid}");
+                foreach (var r in routes)
+                    addressesListBox.Items.Add($"{r} of {_planogram.GetProduct(r.Address).ProductUid}");
+            }
         }
 
         private void savePlanogramButton_Click(object sender, EventArgs e)
@@ -172,7 +186,6 @@ namespace PoC
             retestButton.Enabled = false;
             _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate () {
                 retestButton.Enabled = true;
-
             })));
         }
 
@@ -203,6 +216,24 @@ namespace PoC
                 IDispenser d = dispensersListBox.SelectedItem as IDispenser;
                 if (d != null)
                     d.Reset();
+            }
+        }
+
+        private void unlockButton_Click(object sender, EventArgs e)
+        {
+            foreach (var x in dispensersListBox.SelectedItems)
+            {
+                IDispenser d = (IDispenser)x;
+                d.Unlock();
+            }
+        }
+
+        private void resetButton_Click(object sender, EventArgs e)
+        {
+            foreach (var x in dispensersListBox.SelectedItems)
+            {
+                IDispenser d = (IDispenser)x;
+                d.Reset();
             }
         }
     }

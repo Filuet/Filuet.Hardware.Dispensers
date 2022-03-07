@@ -70,6 +70,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 _channel.SendCommand(ResetCommand());
             }
         }
+        internal void Unlock()
+        {
+            lock (_channel)
+            {
+                _channel.SendCommand(UnlockTheDoor());
+            }
+        }
 
         internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> Status()
             => await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
@@ -138,9 +145,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 {
                     Dispense(a.Key, a.Key == map.Last().Key && i == a.Value/*Send VEND command if last element*/);
 
+                    int index = 0;
                     while (state == null)
                     {
-                        state = await Status(); // Wait for the next not empty state (it means state of the dispensing command) 
+                        if (index == 3)
+                            break;
+                        try
+                        {
+                            state = await Status(); // Wait for the next not empty state (it means state of the dispensing command) 
+                        }
+                        catch (SocketException)
+                        { }
+                        catch (Exception ex)
+                        { }
+                        index++;
                     }
 
                     if (state?.state == DispenserStateSeverity.Normal) // If product was dispensed successfully
@@ -157,7 +175,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     }
                 }
             }
- 
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
@@ -173,9 +190,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             if (address.Machine != machineId) // The route belongs to another machine
                 return false;
 
-            byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
-
-            return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
+            lock (_channel)
+            {
+                byte[] response = _channel.SendCommand(CheckChannelCommand(address.Tray, address.Belt));
+                return response.Length == 8 && response[4] == 0x43; // 0x44 means bealt is unavailable
+            }
         }
 
         public DoorState TryGetDoorState(byte[] arr)
@@ -273,6 +292,19 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x52;
+            InjectCheckSumm(retval);
+            return retval;
+        }
+
+        /// <summary>
+        /// Unlock the elevator door
+        /// </summary>
+        /// <returns></returns>
+        private byte[] UnlockTheDoor()
+        {
+            var retval = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, retval, _commandBody.Length);
+            retval[4] = 0x4E;
             InjectCheckSumm(retval);
             return retval;
         }

@@ -49,7 +49,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public IEnumerable<(string, bool)> Ping(params string[] addresses)
         {
             foreach (string address in addresses)
-               yield return (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
+                yield return (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
         }
 
         public uint GetAddressRank(string address)
@@ -66,6 +66,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public void Reset()
         {
             _machineAdapter.Reset();
+        }
+
+        public void Unlock()
+        {
+            _machineAdapter.Unlock();
         }
 
         public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. { (IsAvailable ? "Available" : "Unavailable") }";
