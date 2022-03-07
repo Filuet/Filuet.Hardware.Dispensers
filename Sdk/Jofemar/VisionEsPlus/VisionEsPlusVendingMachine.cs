@@ -13,7 +13,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<DispenserTestEventArgs> onTest;
         public event EventHandler<string> onResponse;
-        private VisionEsPlus _machineAdapter;
+
+        public uint Id { get; private set; }
 
         public VisionEsPlusVendingMachine(uint id, VisionEsPlus machineAdapter)
         {
@@ -28,7 +29,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             if (testResult.HasValue)
             {
-                _isAvailable = testResult.Value.severity == DispenserStateSeverity.Normal;
+                IsAvailable = testResult.Value.severity == DispenserStateSeverity.Normal;
                 onTest?.Invoke(this, new DispenserTestEventArgs { Severity = testResult.Value.severity, Message = testResult.Value.message });
             }
         }
@@ -45,8 +46,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public async Task MultiplyDispensing(IDictionary<string, uint> map)
             => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
 
-        public bool Ping(string address)
-            => !_isAvailable ? false : _machineAdapter.IsBeltAvailable(Id, address);
+        public IEnumerable<(string, bool)> Ping(params string[] addresses)
+        {
+            foreach (string address in addresses)
+               yield return (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
+        }
 
         public uint GetAddressRank(string address)
         {
@@ -64,10 +68,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.Reset();
         }
 
-        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. { (_isAvailable ? "Available" : "Unavailable") }";
+        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. { (IsAvailable ? "Available" : "Unavailable") }";
 
-        public uint Id { get; private set; }
+        public bool IsAvailable { get; private set; }
 
-        public bool _isAvailable = false;
+        private VisionEsPlus _machineAdapter;
     }
 }

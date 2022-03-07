@@ -19,20 +19,22 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
         public event EventHandler<CompositeDispenserTestEventArgs> onTest;
         public event EventHandler<DispenseFailEventArgs> onFailed;
+        public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
 
         public CompositeDispenser(IEnumerable<IDispenser> dispensers, DispensingChainBuilder chainBuilder, PoG planogram)
         {
             _dispensers = dispensers;
             foreach (IDispenser d in _dispensers)
             {
-                d.onTest += (sender, e) => {
+                d.onTest += (sender, e) =>
+                {
                     onTest?.Invoke(this, new CompositeDispenserTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
                 };
                 d.onResponse += (sender, e) => onResponse?.Invoke(sender, e);
                 d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
             }
 
-            _chainBuilder = chainBuilder ;
+            _chainBuilder = chainBuilder;
             _planogram = planogram;
 
             PingRoutes();
@@ -49,7 +51,8 @@ namespace Filuet.Hardware.Dispensers.Core
 
             await PingRoutes(routesToPing);
 
-            IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address => {
+            IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address =>
+            {
                 PoGRoute route = _planogram.GetRoute(address);
                 return route.Dispenser.GetAddressRank(address);
             });
@@ -65,27 +68,23 @@ namespace Filuet.Hardware.Dispensers.Core
 
         private async Task PingRoutes(IEnumerable<string> routes = null)
             => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
-                .ContinueWith(x => {
+                .ContinueWith(x =>
+                {
                     Stopwatch sw = new Stopwatch();
-
                     sw.Start();
-                    foreach (string route in routes ?? _planogram.Addresses)
+
+                    Parallel.ForEach(_dispensers, d =>
                     {
-                        bool isRouteAvailable = false;
-                        IDispenser correspondentDispenser = null;
-                        foreach (IDispenser dispenser in _dispensers)
-                            if (dispenser.Ping(route))
-                            {
-                                correspondentDispenser = dispenser;
-                                isRouteAvailable = true;
-                                break;
-                            }
+                        foreach (var a in d.Ping(_planogram.Addresses.ToArray()))
+                        {
+                            if (a.Item2)
+                                _planogram.SetAttributes(a.Item1, d, true);
+                        }
+                    });
 
-                        _planogram.SetAttributes(route, correspondentDispenser, isRouteAvailable);
-                    }
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
                     sw.Stop();
-
-                    Console.WriteLine(sw.Elapsed.TotalSeconds);
+                    Console.WriteLine($"Diagnostic time: {sw.Elapsed.TotalSeconds} sec");
                 });
 
         internal readonly IEnumerable<IDispenser> _dispensers;

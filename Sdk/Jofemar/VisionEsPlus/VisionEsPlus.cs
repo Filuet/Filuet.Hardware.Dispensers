@@ -28,7 +28,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings)
         {
             _settings = settings;
-            byte machineAddress = (byte)(Byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
+            byte machineAddress = (byte)(byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
             _commandBody = new byte[] { 0x02 /* start of the message */,
                 0x30 /* Filler1 */,
                 0x30 /* Filler2 */,

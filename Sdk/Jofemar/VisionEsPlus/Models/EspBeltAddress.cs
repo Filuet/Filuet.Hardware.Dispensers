@@ -10,7 +10,7 @@
 
         public static implicit operator EspBeltAddress(string address)
         {
-            if (address == null || !address.Contains("/"))
+            if (address == null)
                 return null;
 
             string[] blocks = address.Split(new char[] { '/' }, System.StringSplitOptions.RemoveEmptyEntries);

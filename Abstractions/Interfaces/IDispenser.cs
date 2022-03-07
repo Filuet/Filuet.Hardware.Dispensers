@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -16,6 +15,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         uint Id { get; }
 
+        bool IsAvailable { get; }
+
         Task Test();
 
         Task Dispense(string address, uint quantity);
@@ -25,9 +26,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <summary>
         /// True means that the address is available
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name="addresses"></param>
         /// <returns></returns>
-        bool Ping(string address);
+        IEnumerable<(string, bool)> Ping(params string[] addresses);
 
         uint GetAddressRank(string address);
 
