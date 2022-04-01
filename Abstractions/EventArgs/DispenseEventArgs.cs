@@ -9,7 +9,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         public static DispenseEventArgs Create(string address)
             => new DispenseEventArgs { address = address };
 
-        public override string ToString()
-            => $"{GetType().Name}({address})";
+        public override string ToString() => $"{GetType().Name}({address})";
     }
 }

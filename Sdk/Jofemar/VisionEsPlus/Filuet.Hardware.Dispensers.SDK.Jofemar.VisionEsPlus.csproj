@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\Common\Filuet.Hardware.Dispensers.Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿namespace Filuet.Hardware.Dispensers.Abstractions
 {
-    public class CompositeDispenserTestEventArgs : DispenserTestEventArgs
+    public class VendingMachineTestEventArgs : DispenserTestEventArgs
     {
         public IDispenser Dispenser { get; set; }
     }

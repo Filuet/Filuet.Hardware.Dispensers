@@ -12,27 +12,33 @@ using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Core
 {
-    internal class CompositeDispenser : ICompositeDispenser
+    internal class VendingMachine : IVendingMachine
     {
         public event EventHandler<string> onResponse;
         public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
-        public event EventHandler<CompositeDispenserTestEventArgs> onTest;
+        public event EventHandler<VendingMachineTestEventArgs> onTest;
         public event EventHandler<DispenseFailEventArgs> onFailed;
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
+        public event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
-        public CompositeDispenser(IEnumerable<IDispenser> dispensers, DispensingChainBuilder chainBuilder, PoG planogram)
+        public VendingMachine(IEnumerable<IDispenser> dispensers,
+            IEnumerable<ILightEmitter> lightEmitters,
+            DispensingChainBuilder chainBuilder,
+            PoG planogram)
         {
             _dispensers = dispensers;
+            _lightEmitters = lightEmitters;
+
             foreach (IDispenser d in _dispensers)
             {
-                d.onTest += (sender, e) =>
-                {
-                    onTest?.Invoke(this, new CompositeDispenserTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
-                };
+                d.onTest += (sender, e) => onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
                 d.onResponse += (sender, e) => onResponse?.Invoke(sender, e);
                 d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
             }
+
+            foreach (ILightEmitter l in _lightEmitters)
+                l.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, e);
 
             _chainBuilder = chainBuilder;
             _planogram = planogram;
@@ -122,6 +128,7 @@ namespace Filuet.Hardware.Dispensers.Core
         }
 
         internal readonly IEnumerable<IDispenser> _dispensers;
+        internal readonly IEnumerable<ILightEmitter> _lightEmitters;
         private readonly DispensingChainBuilder _chainBuilder;
         internal readonly PoG _planogram;
     }

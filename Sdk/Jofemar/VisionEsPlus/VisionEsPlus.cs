@@ -19,11 +19,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlus
     {
+        public event EventHandler<bool> onLightsChanged;
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<string> onStatus;
-        private VisionEsPlusSettings _settings;
-        private readonly byte[] _commandBody;
-        private ICommunicationChannel _channel;
 
         public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings)
         {
@@ -40,27 +38,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 0  /* CheckSum1 */,
                 0x03  /* End of message */ };
             _channel = channel;
+
+            ChangeLight(settings.LightSettings.LightsAreNormallyOn);
         }
 
         #region Actions
         internal void ChangeLight(bool isOn)
         {
-            _settings.LightSettings.LightIsOn = isOn;
-            _channel.SendCommand(ChangeLightCommand(isOn));
-        }
-
-        internal void Blink(TimeSpan? duration = null)
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            bool lightIsOn = _settings.LightSettings.LightIsOn;
-            while (sw.Elapsed < duration)
+            lock (_channel)
             {
-                _channel.SendCommand(ChangeLightCommand(!lightIsOn));
-                lightIsOn = !lightIsOn;
-                Thread.Sleep(_settings.LightSettings.BlinkingPeriod);
+                _channel.SendCommand(ChangeLightCommand(isOn));
+                onLightsChanged?.Invoke(this, isOn);
             }
-            sw.Stop();
         }
 
         internal void Reset()
@@ -70,6 +59,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 _channel.SendCommand(ResetCommand());
             }
         }
+
         internal void Unlock()
         {
             lock (_channel)
@@ -137,6 +127,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             if (state?.state != DispenserStateSeverity.Normal)
                 return;
 
+            ChangeLight(true); // Turn on lights before dispensing 
+
             state = null;
 
             foreach (var a in map)
@@ -145,21 +137,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 {
                     Dispense(a.Key, a.Key == map.Last().Key && i == a.Value/*Send VEND command if last element*/);
 
-                    int index = 0;
-                    while (state == null)
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+                    while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30)
                     {
-                        if (index == 3)
-                            break;
                         try
                         {
-                            state = await Status(); // Wait for the next not empty state (it means state of the dispensing command) 
+                             state = await Status(); // Wait for the next not empty state (it means state of the dispensing command) 
                         }
                         catch (SocketException)
                         { }
                         catch (Exception ex)
                         { }
-                        index++;
                     }
+                    sw.Stop();
 
                     if (state?.state == DispenserStateSeverity.Normal) // If product was dispensed successfully
                     {
@@ -175,6 +166,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     }
                 }
             }
+
+            // Turn off lights after dispensing
+            if (!_settings.LightSettings.LightsAreNormallyOn)
+                ChangeLight(false);
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
@@ -333,5 +328,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             => response == null || (response != null && (response.Count > 10 || response.Count == 0)) ?
                 VisionEsPlusResponseCodes.Unknown : (VisionEsPlusResponseCodes)response[response.Count - 1];
         #endregion
+
+        private VisionEsPlusSettings _settings;
+        private readonly byte[] _commandBody;
+        private ICommunicationChannel _channel;
     }
 }

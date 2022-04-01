@@ -8,19 +8,19 @@ using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
-    public class VisionEsPlusVendingMachine : IDispenser
+    public class VisionEsPlusVendingMachine : IDispenser, ILightEmitter
     {
         public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<DispenserTestEventArgs> onTest;
         public event EventHandler<string> onResponse;
-
-        public uint Id { get; private set; }
+        public event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
         public VisionEsPlusVendingMachine(uint id, VisionEsPlus machineAdapter)
         {
             _machineAdapter = machineAdapter;
             Id = id;
             _machineAdapter.onStatus += (sender, e) => onResponse?.Invoke(this, e);
+            _machineAdapter.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, LightEmitterEventArgs.Create(Id, e));
         }
 
         public async Task Test()
@@ -36,7 +36,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         // There is no use to dispense one by one
         public async Task Dispense(string address, uint quantity)
-            => await _machineAdapter.MultiplyDispensing(address, quantity);    
+            => await _machineAdapter.MultiplyDispensing(address, quantity);
 
         /// <summary>
         /// Be sure that common weight of the products to be dispensed must be less than weight threshold of the elevator
@@ -45,6 +45,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns></returns>
         public async Task MultiplyDispensing(IDictionary<string, uint> map)
             => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
+
 
         public IEnumerable<(string, bool)> Ping(params string[] addresses)
         {
@@ -73,7 +74,22 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.Unlock();
         }
 
-        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. { (IsAvailable ? "Available" : "Unavailable") }";
+        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. {(IsAvailable ? "Available" : "Unavailable")}";
+
+        public void LightOn()
+        {
+            _machineAdapter.ChangeLight(true);
+        }
+
+        public void LightOff()
+        {
+            _machineAdapter.ChangeLight(false);
+        }
+
+        /// <summary>
+        /// Dispenser unique identifier
+        /// </summary>
+        public uint Id { get; private set; }
 
         public bool IsAvailable { get; private set; }
 

@@ -31,7 +31,7 @@ namespace PoC
             InitializeComponent();
         }
 
-        public void Initialize(PoG planogram, ICompositeDispenser dispenser)
+        public void Initialize(PoG planogram, IVendingMachine dispenser)
         {
             _planogram = planogram;
             _dispenser = dispenser;
@@ -62,7 +62,16 @@ namespace PoC
                 //}
             };
 
-            _dispenser.onFailed += (sender, e) => {
+            _dispenser.onLightsChanged += (sender, e) =>
+            {
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    Log(LogLevel.Information, $"Dispenser №{e.Id} Lights are {(e.IsOn? "On" : "Off")}");
+                }));
+            };
+
+            _dispenser.onFailed += (sender, e) =>
+            {
                 Console.WriteLine(e.message);
                 Invoke(new MethodInvoker(delegate ()
                 {
@@ -70,7 +79,8 @@ namespace PoC
                 }));
             };
 
-            _dispenser.onPlanogramClarification += (sender, e) => {
+            _dispenser.onPlanogramClarification += (sender, e) =>
+            {
                 _planogram = e.Planogram;
                 Invoke(new MethodInvoker(delegate ()
                 {
@@ -81,7 +91,7 @@ namespace PoC
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
             skuComboBox.SelectedIndex = 0;
 
-            _factDispenser = (CompositeDispenser)_dispenser;
+            _factDispenser = (VendingMachine)_dispenser;
             //foreach (var d in _factDispenser._dispensers)
             //{
             //    MachineIdIsAvailable[d.Id] = false;
@@ -184,7 +194,8 @@ namespace PoC
         private void retestButton_Click(object sender, EventArgs e)
         {
             retestButton.Enabled = false;
-            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate () {
+            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate ()
+            {
                 retestButton.Enabled = true;
             })));
         }
@@ -205,9 +216,9 @@ namespace PoC
 
         private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
 
-        private ICompositeDispenser _dispenser;
+        private IVendingMachine _dispenser;
         private PoG _planogram;
-        private CompositeDispenser _factDispenser;
+        private VendingMachine _factDispenser;
 
         private void dispensersListBox_MouseDoubleClick(object sender, MouseEventArgs e)
         {
@@ -234,6 +245,28 @@ namespace PoC
             {
                 IDispenser d = (IDispenser)x;
                 d.Reset();
+            }
+        }
+
+        private void lightOnButton_Click(object sender, EventArgs e)
+        {
+            foreach (var x in dispensersListBox.SelectedItems)
+            {
+                IDispenser d = (IDispenser)x;
+                ILightEmitter lem = _factDispenser._lightEmitters.FirstOrDefault(x => x.Id == d.Id);
+                if (lem != null)
+                    lem.LightOn();
+            }
+        }
+
+        private void lightOffButton_Click(object sender, EventArgs e)
+        {
+            foreach (var x in dispensersListBox.SelectedItems)
+            {
+                IDispenser d = (IDispenser)x;
+                ILightEmitter lem = _factDispenser._lightEmitters.FirstOrDefault(x => x.Id == d.Id);
+                if (lem != null)
+                    lem.LightOff();
             }
         }
     }

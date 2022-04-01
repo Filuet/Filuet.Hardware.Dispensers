@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
     /// <summary>
-    /// Composite product dispenser
+    /// Vending machine interface
     /// </summary>
     /// <remarks>Can consist of any quantity of single dispensers</remarks>
-    public interface ICompositeDispenser
+    public interface IVendingMachine
     {
         event EventHandler<string> onResponse;
 
@@ -15,11 +15,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
 
-        event EventHandler<CompositeDispenserTestEventArgs> onTest;
+        event EventHandler<VendingMachineTestEventArgs> onTest;
 
         event EventHandler<DispenseFailEventArgs> onFailed;
 
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
+
+        event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
         Task Dispense(params (string productUid, ushort quantity)[] items);
 

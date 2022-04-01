@@ -3,7 +3,7 @@
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
-    /// A command for <see cref="ICompositeDispenser"/> to dispense a product
+    /// A command for <see cref="IVendingMachine"/> to dispense a product
     /// </summary>
     public class DispenseCommand
     {

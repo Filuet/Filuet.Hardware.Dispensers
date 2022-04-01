@@ -6,10 +6,10 @@ namespace Filuet.Hardware.Dispensers.Core
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddCompositeDispenser(this IServiceCollection serviceCollection,
-            Func<IServiceProvider, ICompositeDispenser> dispenserSetup,
-            Func<ICompositeDispenser, ICompositeDispenser> decorator = null)
+        public static IServiceCollection AddVendingMachine(this IServiceCollection serviceCollection,
+            Func<IServiceProvider, IVendingMachine> dispenserSetup,
+            Func<IVendingMachine, IVendingMachine> decorator = null)
             => serviceCollection
-            .AddSingleton(sp => decorator != null ? decorator(dispenserSetup(sp)) : dispenserSetup(sp)); //TraceDecorator<ICompositeDispenser>.Create(dispenserSetup(sp))
+            .AddSingleton(sp => decorator != null ? decorator(dispenserSetup(sp)) : dispenserSetup(sp)); //TraceDecorator<IVendingMachine>.Create(dispenserSetup(sp))
     }
 }

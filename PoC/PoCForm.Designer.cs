@@ -34,6 +34,9 @@ namespace PoC
             this.addressesListBox = new System.Windows.Forms.ListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.lightOffButton = new System.Windows.Forms.Button();
+            this.lightOnButton = new System.Windows.Forms.Button();
+            this.resetButton = new System.Windows.Forms.Button();
             this.unlockButton = new System.Windows.Forms.Button();
             this.retestButton = new System.Windows.Forms.Button();
             this.dispenseButton = new System.Windows.Forms.Button();
@@ -50,7 +53,6 @@ namespace PoC
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.savePlanogramButton = new System.Windows.Forms.Button();
             this.planogramRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.resetButton = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -63,7 +65,7 @@ namespace PoC
             this.dispensersListBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.dispensersListBox.FormattingEnabled = true;
             this.dispensersListBox.ItemHeight = 15;
-            this.dispensersListBox.Location = new System.Drawing.Point(538, 66);
+            this.dispensersListBox.Location = new System.Drawing.Point(538, 79);
             this.dispensersListBox.Name = "dispensersListBox";
             this.dispensersListBox.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
             this.dispensersListBox.Size = new System.Drawing.Size(178, 64);
@@ -87,9 +89,9 @@ namespace PoC
             | System.Windows.Forms.AnchorStyles.Right)));
             this.addressesListBox.FormattingEnabled = true;
             this.addressesListBox.ItemHeight = 15;
-            this.addressesListBox.Location = new System.Drawing.Point(538, 134);
+            this.addressesListBox.Location = new System.Drawing.Point(538, 149);
             this.addressesListBox.Name = "addressesListBox";
-            this.addressesListBox.Size = new System.Drawing.Size(178, 289);
+            this.addressesListBox.Size = new System.Drawing.Size(178, 274);
             this.addressesListBox.TabIndex = 3;
             // 
             // tabControl1
@@ -105,6 +107,8 @@ namespace PoC
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.lightOffButton);
+            this.tabPage1.Controls.Add(this.lightOnButton);
             this.tabPage1.Controls.Add(this.resetButton);
             this.tabPage1.Controls.Add(this.unlockButton);
             this.tabPage1.Controls.Add(this.retestButton);
@@ -121,6 +125,39 @@ namespace PoC
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Dispensing";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // lightOffButton
+            // 
+            this.lightOffButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lightOffButton.Location = new System.Drawing.Point(630, 47);
+            this.lightOffButton.Name = "lightOffButton";
+            this.lightOffButton.Size = new System.Drawing.Size(70, 23);
+            this.lightOffButton.TabIndex = 18;
+            this.lightOffButton.Text = "Light Off";
+            this.lightOffButton.UseVisualStyleBackColor = true;
+            this.lightOffButton.Click += new System.EventHandler(this.lightOffButton_Click);
+            // 
+            // lightOnButton
+            // 
+            this.lightOnButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lightOnButton.Location = new System.Drawing.Point(556, 47);
+            this.lightOnButton.Name = "lightOnButton";
+            this.lightOnButton.Size = new System.Drawing.Size(70, 23);
+            this.lightOnButton.TabIndex = 17;
+            this.lightOnButton.Text = "Light On";
+            this.lightOnButton.UseVisualStyleBackColor = true;
+            this.lightOnButton.Click += new System.EventHandler(this.lightOnButton_Click);
+            // 
+            // resetButton
+            // 
+            this.resetButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.resetButton.Location = new System.Drawing.Point(662, 21);
+            this.resetButton.Name = "resetButton";
+            this.resetButton.Size = new System.Drawing.Size(58, 23);
+            this.resetButton.TabIndex = 16;
+            this.resetButton.Text = "Reset";
+            this.resetButton.UseVisualStyleBackColor = true;
+            this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
             // 
             // unlockButton
             // 
@@ -309,17 +346,6 @@ namespace PoC
             this.planogramRichTextBox.TabIndex = 0;
             this.planogramRichTextBox.Text = "";
             // 
-            // resetButton
-            // 
-            this.resetButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.resetButton.Location = new System.Drawing.Point(662, 21);
-            this.resetButton.Name = "resetButton";
-            this.resetButton.Size = new System.Drawing.Size(58, 23);
-            this.resetButton.TabIndex = 16;
-            this.resetButton.Text = "Reset";
-            this.resetButton.UseVisualStyleBackColor = true;
-            this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
-            // 
             // PoCForm
             // 
             this.AcceptButton = this.dispenseButton;
@@ -364,5 +390,7 @@ namespace PoC
         private System.Windows.Forms.Button retestButton;
         private System.Windows.Forms.Button unlockButton;
         private System.Windows.Forms.Button resetButton;
+        private System.Windows.Forms.Button lightOffButton;
+        private System.Windows.Forms.Button lightOnButton;
     }
 }
