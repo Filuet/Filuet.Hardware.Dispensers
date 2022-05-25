@@ -14,9 +14,10 @@ namespace Filuet.Hardware.Dispensers.Core
 {
     internal class VendingMachine : IVendingMachine
     {
-        public event EventHandler<string> onResponse;
+        public event EventHandler<(bool direction, string message, string data)> onDataMoving;
+        public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
+        public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<VendingMachineTestEventArgs> onTest;
         public event EventHandler<DispenseFailEventArgs> onFailed;
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
@@ -33,8 +34,10 @@ namespace Filuet.Hardware.Dispensers.Core
             foreach (IDispenser d in _dispensers)
             {
                 d.onTest += (sender, e) => onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
-                d.onResponse += (sender, e) => onResponse?.Invoke(sender, e);
+                d.onDataMoving += (sender, e) => onDataMoving?.Invoke(sender, e);
+                d.onDispensing += (sender, e) => onDispensing?.Invoke(sender, e);
                 d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
+                d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
             }
 
             foreach (ILightEmitter l in _lightEmitters)
@@ -65,7 +68,9 @@ namespace Filuet.Hardware.Dispensers.Core
                 IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
 
                 foreach (var dispenser in dispensers)
+                {
                     await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+                }
             }
             catch (InvalidOperationException ex)
             {

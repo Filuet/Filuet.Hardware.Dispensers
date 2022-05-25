@@ -61,7 +61,42 @@ namespace PoC.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [{&quot;product&quot;:&quot;0141&quot;,&quot;routes&quot;:[{&quot;r&quot;:&quot;1/18/0&quot;,&quot;q&quot;:5,&quot;a&quot;:1},{&quot;r&quot;:&quot;1/16/3&quot;,&quot;q&quot;:3,&quot;a&quot;:1}]},{&quot;product&quot;:&quot;0145&quot;,&quot;routes&quot;:[{&quot;r&quot;:&quot;2/18/2&quot;,&quot;q&quot;:1,&quot;a&quot;:1},{&quot;r&quot;:&quot;2/16/0&quot;,&quot;q&quot;:5,&quot;a&quot;:1}]}].
+        ///   Looks up a localized string similar to [
+        ///  {
+        ///    &quot;product&quot;: &quot;0141&quot;,
+        ///    &quot;routes&quot;: [
+        ///      {
+        ///        &quot;r&quot;: &quot;1/18/0&quot;,
+        ///        &quot;q&quot;: 5,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///      {
+        ///        &quot;r&quot;: &quot;1/18/3&quot;,
+        ///        &quot;q&quot;: 0,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///      {
+        ///        &quot;r&quot;: &quot;1/18/4&quot;,
+        ///        &quot;q&quot;: 1,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///      {
+        ///        &quot;r&quot;: &quot;1/18/5&quot;,
+        ///        &quot;q&quot;: 0,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///      {
+        ///        &quot;r&quot;: &quot;1/18/6&quot;,
+        ///        &quot;q&quot;: 0,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///	  {
+        ///        &quot;r&quot;: &quot;1/18/7&quot;,
+        ///        &quot;q&quot;: 0,
+        ///        &quot;a&quot;: 0
+        ///      },
+        ///      {
+        ///  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string test_pranogram {
             get {

@@ -42,6 +42,7 @@ namespace PoC
                                 #region Machine1
                                 VisionEsPlusSettings settings1 = new VisionEsPlusSettings
                                 {
+                                    Alias = "Machine 1",
                                     PortNumber = (ushort)5050,
                                     Address = string.Format("0x{0:X2}", 1), // "0x01",
                                     IpAddress = "172.16.7.103",
@@ -58,6 +59,7 @@ namespace PoC
                                 #region Machine2
                                 VisionEsPlusSettings settings2 = new VisionEsPlusSettings
                                 {
+                                    Alias = "Machine 2",
                                     PortNumber = (ushort)5051,
                                     Address = string.Format("0x{0:X2}", 1), // "0x01",
                                     IpAddress = "172.16.7.103"
@@ -76,9 +78,10 @@ namespace PoC
                         .AddPlanogram(sp.GetRequiredService<PoG>())
                         .Build();
 
-                    vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
-                    vendingMachine.onDispensingFinished += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
-                    vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e.Message}");
+                    vendingMachine.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
+                    vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
+                    vendingMachine.onAbandonment += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Warning, $"Likely that the products have been abandoned from {e}");
+                    vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Test finished {e.Message}");
                     ////vendingMachine.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");
                     return vendingMachine;
                 }, null)

@@ -9,11 +9,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// <remarks>Can consist of any quantity of single dispensers</remarks>
     public interface IVendingMachine
     {
-        event EventHandler<string> onResponse;
+        event EventHandler<(bool direction, string message, string data)> onDataMoving;
+
+        event EventHandler<DispenseEventArgs> onDispensing;
 
         event EventHandler<DispenseEventArgs> onDispensed;
 
-        event EventHandler<ProductDispensedEventArgs> onDispensingFinished;
+        event EventHandler<DispenseEventArgs> onAbandonment;
 
         event EventHandler<VendingMachineTestEventArgs> onTest;
 

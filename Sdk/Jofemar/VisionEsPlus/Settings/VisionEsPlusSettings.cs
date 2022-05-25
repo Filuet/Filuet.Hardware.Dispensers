@@ -4,6 +4,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusSettings
     {
+        public string Alias { get; set; }
         /// <summary>
         /// TCP: Ip address; Serial: 0x01 by default (all machines have 0x01 address cause we're separating them by serial ports)
         /// </summary>
@@ -13,5 +14,19 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public UInt16 BaudRate { get; set; } = 9600;
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
         public VisionEsPlusLightEmitterSettings LightSettings { get; set; } = new VisionEsPlusLightEmitterSettings();
+
+        public string ID
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(Alias))
+                    return Alias;
+
+                if (!string.IsNullOrWhiteSpace(IpAddress))
+                    return $"{IpAddress}:{PortNumber}";
+
+                return Address;
+            }
+        }
     }
 }

@@ -88,6 +88,14 @@ namespace PoC
                 }));
             };
 
+            _dispenser.onDataMoving += (sender, e) =>
+            {
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    telemetryTextBox.Text = $"{DateTime.Now:HH:mm:ss.fff} {(e.direction ? "→" : "←")} {e.data} [{e.message}] {Environment.NewLine}{telemetryTextBox.Text}";
+                }));
+            };
+
             skuComboBox.Items.AddRange(_planogram.Products.ToArray());
             skuComboBox.SelectedIndex = 0;
 
@@ -185,9 +193,8 @@ namespace PoC
 
         public void Log(LogLevel level, string message)
         {
-            Invoke(new MethodInvoker(delegate ()
-            {
-                protoTextBox.Text += $"{DateTime.Now:HH:mm:ss} {level} {message}{Environment.NewLine}";
+            Invoke(new MethodInvoker(delegate () {
+                protoTextBox.Text = $"{DateTime.Now:HH:mm:ss.fff} {level} {message}{Environment.NewLine}{protoTextBox.Text}";
             }));
         }
 

@@ -9,9 +9,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// </summary>
     public interface IDispenser
     {
+        event EventHandler<DispenseEventArgs> onDispensing;
         event EventHandler<DispenseEventArgs> onDispensed;
+        event EventHandler<DispenseEventArgs> onAbandonment;
         event EventHandler<DispenserTestEventArgs> onTest;
-        event EventHandler<string> onResponse;
+        event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
         uint Id { get; }
 

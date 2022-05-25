@@ -10,17 +10,26 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusVendingMachine : IDispenser, ILightEmitter
     {
+        public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
+        /// <summary>
+        /// Fires when the customer forget to pick up the products
+        /// </summary>
+        public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<DispenserTestEventArgs> onTest;
-        public event EventHandler<string> onResponse;
+        public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
         public VisionEsPlusVendingMachine(uint id, VisionEsPlus machineAdapter)
         {
             _machineAdapter = machineAdapter;
             Id = id;
-            _machineAdapter.onStatus += (sender, e) => onResponse?.Invoke(this, e);
+            _machineAdapter.onDataMoving += (sender, e) => onDataMoving?.Invoke(this, e);
             _machineAdapter.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, LightEmitterEventArgs.Create(Id, e));
+            _machineAdapter.onDispensing += (sender, e) => onDispensing?.Invoke(this, e);
+            _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
+            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
+            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
         }
 
         public async Task Test()

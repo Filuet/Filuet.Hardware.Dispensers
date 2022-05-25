@@ -64,7 +64,7 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
             }
 
             if (addressesToDispense.Select(x => x.Value).Sum(x => x) != cart.Sum(x => x.quantity))
-                throw new InvalidOperationException("An error occured while building the chain of dispensing");
+                throw new InvalidOperationException("An error occured while building the chain of dispensing\r\nPlease check addresses of the belts");
 
             addressesToDispense = addressesToDispense.OrderBy(x => getRankByRoute(x.Key)).ToDictionary(x => x.Key, x => x.Value);
 
