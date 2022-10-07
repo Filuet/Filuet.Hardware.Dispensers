@@ -9,10 +9,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// TCP: Ip address; Serial: 0x01 by default (all machines have 0x01 address cause we're separating them by serial ports)
         /// </summary>
         public string Address { get; set; } //= 0x01;
-        public string IpAddress { get; set; } // for testing purposes and remote control
+        public string IpOrSerialAddress { get; set; } // for testing purposes and remote control
         public UInt16 PortNumber { get; set; }
         public UInt16 BaudRate { get; set; } = 9600;
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
+        /// <summary>
+        /// How often should we send Status request
+        /// </summary>
+        public decimal PollFrequencyHz { get; set; } = 0.5m;
         public VisionEsPlusLightEmitterSettings LightSettings { get; set; } = new VisionEsPlusLightEmitterSettings();
 
         public string ID
@@ -22,8 +26,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 if (!string.IsNullOrWhiteSpace(Alias))
                     return Alias;
 
-                if (!string.IsNullOrWhiteSpace(IpAddress))
-                    return $"{IpAddress}:{PortNumber}";
+                if (!string.IsNullOrWhiteSpace(IpOrSerialAddress))
+                    return $"{IpOrSerialAddress}:{PortNumber}";
 
                 return Address;
             }

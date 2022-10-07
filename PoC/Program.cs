@@ -27,8 +27,10 @@ namespace PoC
 
             PoCForm form = new PoCForm();
 
+            form.Show();
+
             IServiceProvider sp = new ServiceCollection()
-                .AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
+                .AddSingleton(PoG.Read("[]"))
                 .AddVendingMachine(sp =>
                 {
                     ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>(); 
@@ -43,34 +45,39 @@ namespace PoC
                                 VisionEsPlusSettings settings1 = new VisionEsPlusSettings
                                 {
                                     Alias = "Machine 1",
-                                    PortNumber = (ushort)5050,
+                                    PortNumber = 5050,
                                     Address = string.Format("0x{0:X2}", 1), // "0x01",
-                                    IpAddress = "172.16.7.103",
-                                    LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true }
+                                    IpOrSerialAddress = "COM9",// "172.16.7.103",
+                                    LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
+                                    PollFrequencyHz = 0.33m
                                 };
 
-                                ICommunicationChannel channel1 = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpAddress), settings1.PortNumber); });
+                                ICommunicationChannel channel1 = new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
+                                //new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpAddress), settings1.PortNumber); });
 
-                                VisionEsPlusVendingMachine machine1 = new VisionEsPlusVendingMachine(1, new VisionEsPlus(channel1, settings1));
+                                VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(channel1, settings1));
                                 result.Add(machine1);
                                 integratedEmitters.Add(machine1);
                                 #endregion
 
-                                #region Machine2
-                                VisionEsPlusSettings settings2 = new VisionEsPlusSettings
-                                {
-                                    Alias = "Machine 2",
-                                    PortNumber = (ushort)5051,
-                                    Address = string.Format("0x{0:X2}", 1), // "0x01",
-                                    IpAddress = "172.16.7.103"
-                                };
+                                // Uncomment to enable machine1
+                                //#region Machine2
+                                //VisionEsPlusSettings settings2 = new VisionEsPlusSettings
+                                //{
+                                //    Alias = "Machine 2",
+                                //    PortNumber = 5051,
+                                //    Address = string.Format("0x{0:X2}", 1), // "0x01",
+                                //    IpAddress = "172.16.7.103",
+                                //    LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
+                                //    PollFrequencyHz = 1m
+                                //};
 
-                                ICommunicationChannel channel2 = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpAddress), settings2.PortNumber); });
+                                //ICommunicationChannel channel2 = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpAddress), settings2.PortNumber); });
 
-                                VisionEsPlusVendingMachine machine2 = new VisionEsPlusVendingMachine(2, new VisionEsPlus(channel2, settings2));
-                                result.Add(machine2);
-                                integratedEmitters.Add(machine2);
-                                #endregion
+                                //VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(channel2, settings2));
+                                //result.Add(machine2);
+                                //integratedEmitters.Add(machine2);
+                                //#endregion
 
                                 return result;
                             })
@@ -78,10 +85,17 @@ namespace PoC
                         .AddPlanogram(sp.GetRequiredService<PoG>())
                         .Build();
 
-                    vendingMachine.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing started {e.address}");
-                    vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing finished {e}");
-                    vendingMachine.onAbandonment += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Warning, $"Likely that the products have been abandoned from {e}");
-                    vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Test finished {e.Message}");
+                    vendingMachine.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is started {e.address}");
+                    vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is finished {e}");
+                    vendingMachine.onAbandonment += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Warning, $"Likely that products were abandoned {e}");
+                    vendingMachine.onFailed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Error, e.ToString());
+                    vendingMachine.onLightsChanged += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+                    vendingMachine.onPlanogramClarification += (sender, e) =>
+                    {
+                        form.Planogram = e.Planogram;
+                        form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");
+                    };
+                    // vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Message);
                     ////vendingMachine.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");
                     return vendingMachine;
                 }, null)

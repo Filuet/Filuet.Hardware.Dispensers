@@ -84,7 +84,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonPropertyName("a")]
         [JsonConverter(typeof(BoolToNumJsonConverter))]
-        public bool Active { get; set; }
+        public bool? Active { get; set; }
 
         [JsonIgnore]
         public IDispenser Dispenser { get; set; }

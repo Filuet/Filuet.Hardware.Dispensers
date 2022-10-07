@@ -13,7 +13,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onDispensed;
         event EventHandler<DispenseEventArgs> onAbandonment;
         event EventHandler<DispenserTestEventArgs> onTest;
+        event EventHandler onReset;
+
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
+
+        string Alias { get; }
 
         uint Id { get; }
 
@@ -29,12 +33,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// True means that the address is available
         /// </summary>
         /// <param name="addresses"></param>
+        /// <remarks>if isActive is null than the address doesn't belong to the dispenser</remarks>
         /// <returns></returns>
-        IEnumerable<(string, bool)> Ping(params string[] addresses);
+        IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses);
 
         uint GetAddressRank(string address);
 
-        void Reset();
+        Task Reset();
 
         /// <summary>
         /// Open door or something

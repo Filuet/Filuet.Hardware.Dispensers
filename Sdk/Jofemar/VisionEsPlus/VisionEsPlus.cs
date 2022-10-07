@@ -71,21 +71,21 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     switch (code)
                     {
                         case VisionEsPlusResponseCodes.Unknown:
-                            return (DispenserStateSeverity.Inoperable, code, "The machine is inoperable");
+                            return (DispenserStateSeverity.Inoperable, code, "inoperable");
                         case VisionEsPlusResponseCodes.Ok:
                         case VisionEsPlusResponseCodes.Ready:
                         case VisionEsPlusResponseCodes.FaultIn485Bus:
-                            return (DispenserStateSeverity.Normal, code, "The machine is connected");
+                            return (DispenserStateSeverity.Normal, code, "connected");
                         default:
                             switch (TryGetDoorState(response))
                             {
                                 case DoorState.DoorClosed:
-                                    return (DispenserStateSeverity.Normal, code, "The door was closed");
+                                    return (DispenserStateSeverity.Normal, code, "the door was closed");
                                 case DoorState.DoorOpen:
-                                    return (DispenserStateSeverity.MaintenanceService, code, "The door is open");
+                                    return (DispenserStateSeverity.MaintenanceService, code, "the door is open");
                                 case DoorState.Unknown:
                                 default:
-                                    return (DispenserStateSeverity.Inoperable, code, "The machine is inoperable");
+                                    return (DispenserStateSeverity.Inoperable, code, "inoperable");
                             }
                     }
                 }));
@@ -196,6 +196,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                         break;
                                 }
                             }
+                            else
+                            {
+                            
+                            }
 
                             break;
                         default:
@@ -215,12 +219,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
         }
 
-        internal bool IsBeltAvailable(uint machineId, string route)
+        internal bool? IsBeltActive(uint machineId, string route)
         {
             EspBeltAddress address = route;
 
             if (address.Machine != machineId) // The route belongs to another machine
-                return false;
+                return null;
 
             return ExecuteCommand(CheckChannelCommand(address.Tray, address.Belt), "CheckBelt", (response, code) =>
                 response.Length == 8 && response[4] == 0x43); // 0x44 means bealt is unavailable
@@ -406,6 +410,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         private string _bitConvert(byte[] data) => BitConverter.ToString(data).Replace('-', ' ');
         #endregion
+
+        internal string Alias => _settings.Alias;
 
         private VisionEsPlusSettings _settings;
         private readonly byte[] _commandBody;

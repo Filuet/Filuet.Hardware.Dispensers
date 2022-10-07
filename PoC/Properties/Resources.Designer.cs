@@ -68,35 +68,33 @@ namespace PoC.Properties {
         ///      {
         ///        &quot;r&quot;: &quot;1/18/0&quot;,
         ///        &quot;q&quot;: 5,
-        ///        &quot;a&quot;: 0
+        ///        &quot;a&quot;: null
         ///      },
         ///      {
         ///        &quot;r&quot;: &quot;1/18/3&quot;,
         ///        &quot;q&quot;: 0,
-        ///        &quot;a&quot;: 0
+        ///        &quot;a&quot;: null
         ///      },
         ///      {
         ///        &quot;r&quot;: &quot;1/18/4&quot;,
         ///        &quot;q&quot;: 1,
-        ///        &quot;a&quot;: 0
+        ///        &quot;a&quot;: null
         ///      },
         ///      {
         ///        &quot;r&quot;: &quot;1/18/5&quot;,
         ///        &quot;q&quot;: 0,
-        ///        &quot;a&quot;: 0
+        ///        &quot;a&quot;: null
         ///      },
         ///      {
         ///        &quot;r&quot;: &quot;1/18/6&quot;,
         ///        &quot;q&quot;: 0,
-        ///        &quot;a&quot;: 0
+        ///        &quot;a&quot;: null
         ///      },
         ///	  {
         ///        &quot;r&quot;: &quot;1/18/7&quot;,
         ///        &quot;q&quot;: 0,
-        ///        &quot;a&quot;: 0
-        ///      },
-        ///      {
-        ///  [rest of string was truncated]&quot;;.
+        ///        &quot;a&quot;: null
+        ///   [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string test_pranogram {
             get {

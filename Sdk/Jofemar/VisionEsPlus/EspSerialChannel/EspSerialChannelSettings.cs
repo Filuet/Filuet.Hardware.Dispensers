@@ -3,10 +3,10 @@ using System.Net;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication
 {
-    public class EspTcpChannelSettings
+    public class EspSerialChannelSettings
     {
-        public IPEndPoint Endpoint;
+        public string PortName;
         public TimeSpan ReadDelay = TimeSpan.FromMilliseconds(200);
-        public TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(20);
+        public TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(2);
     }
 }

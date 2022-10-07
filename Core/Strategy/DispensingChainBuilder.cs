@@ -10,7 +10,7 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
     {
         public DispensingChainBuilder(PoG planogram) { _planogram = planogram; }
 
-        public IEnumerable<DispenseCommand> BuildChain((string productUid, ushort quantity)[] cart, Func<string, uint> getRankByRoute, 
+        public IEnumerable<DispenseCommand> BuildChain((string productUid, ushort quantity)[] cart, Func<string, uint> getRankByRoute,
             Func<string, bool> isRouteAvailable)
         {
             Dictionary<string /*address*/, ushort /*qty*/> addressesToDispense = new Dictionary<string, ushort>();
@@ -19,7 +19,11 @@ namespace Filuet.Hardware.Dispensers.Core.Strategy
 
             foreach (var item in cart)
             {
-                IEnumerable<PoGRoute> routes = _planogram[item.productUid].Routes.Where(x => x.Active && x.Quantity > 0).ToList();
+                // Get all routes where status either 'active' or 'unknown' and qty > 0 only
+                IEnumerable<PoGRoute> routes = _planogram[item.productUid].Routes.Where(x =>
+                    ((x.Active.HasValue && x.Active.Value) || !x.Active.HasValue)
+                    && x.Quantity > 0).ToList();
+
                 if (!routes.Any())
                     throw new InvalidOperationException($"Unable to extract {item.productUid}: no address");
 

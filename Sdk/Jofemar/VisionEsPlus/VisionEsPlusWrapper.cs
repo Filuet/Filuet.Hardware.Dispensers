@@ -4,11 +4,12 @@ using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
-    public class VisionEsPlusVendingMachine : IDispenser, ILightEmitter
+    public class VisionEsPlusWrapper : IDispenser, ILightEmitter
     {
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
@@ -17,15 +18,16 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<DispenserTestEventArgs> onTest;
+        public event EventHandler onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
-        public VisionEsPlusVendingMachine(uint id, VisionEsPlus machineAdapter)
+        public VisionEsPlusWrapper(uint id, VisionEsPlus machineAdapter)
         {
             _machineAdapter = machineAdapter;
             Id = id;
             _machineAdapter.onDataMoving += (sender, e) => onDataMoving?.Invoke(this, e);
-            _machineAdapter.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, LightEmitterEventArgs.Create(Id, e));
+            _machineAdapter.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, LightEmitterEventArgs.Create(Id, Alias, e));
             _machineAdapter.onDispensing += (sender, e) => onDispensing?.Invoke(this, e);
             _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
             _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
@@ -56,10 +58,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
 
 
-        public IEnumerable<(string, bool)> Ping(params string[] addresses)
+        public IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses)
         {
             foreach (string address in addresses)
-                yield return (address, IsAvailable ? _machineAdapter.IsBeltAvailable(Id, address) : false);
+            {
+                Thread.Sleep(100);
+                yield return (address, IsAvailable ? _machineAdapter.IsBeltActive(Id, address) : false);
+            }
         }
 
         public uint GetAddressRank(string address)
@@ -73,9 +78,16 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             else throw new ArgumentException($"Invalid dispensing address: {address}");
         }
 
-        public void Reset()
+        public async Task Reset()
         {
             _machineAdapter.Reset();
+            (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = null;
+            while (state == null || state.Value.state == DispenserStateSeverity.Inoperable)
+            {
+                Thread.Sleep(3000);
+                state = await _machineAdapter.Status();
+            }
+            onReset?.Invoke(this, null);
         }
 
         public void Unlock()
@@ -94,6 +106,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         {
             _machineAdapter.ChangeLight(false);
         }
+
+        public string Alias => _machineAdapter.Alias;
 
         /// <summary>
         /// Dispenser unique identifier

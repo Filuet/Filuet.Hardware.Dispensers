@@ -38,6 +38,11 @@ namespace Filuet.Hardware.Dispensers.Core
                 d.onDispensing += (sender, e) => onDispensing?.Invoke(sender, e);
                 d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
+                d.onReset += (sender, e) =>
+                {
+                    // Check routes right after reset. It can be that some routes have been enabled/disabled recently
+                    PingRoutes();
+                };
             }
 
             foreach (ILightEmitter l in _lightEmitters)
@@ -89,29 +94,24 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public async Task Test() => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray());
 
-        private async Task PingRoutes(IEnumerable<string> routes = null)
+        private async Task PingRoutes()
             => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
                 .ContinueWith(x =>
                 {
-                    Stopwatch sw = new Stopwatch();
-                    sw.Start();
-
                     Parallel.ForEach(_dispensers, d =>
                     {
                         var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();
                         foreach (var a in pingResult)
-                            if (a.Item2)
-                                _planogram.SetAttributes(a.Item1, d, true);
+                            if (a.isActive.HasValue)
+                                _planogram.SetAttributes(a.address, d, a.isActive.Value);
                     });
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
-                    sw.Stop();
-                    Console.WriteLine($"Diagnostic time: {sw.Elapsed.TotalSeconds} sec");
                 });
 
         private bool PingRoute(string route)
         {
-            bool isAvailable = false;
+            bool isActive = false;
 
             foreach (var d in _dispensers)
             {
@@ -120,16 +120,16 @@ namespace Filuet.Hardware.Dispensers.Core
 
                 var pingResult = d.Ping(route);
                 foreach (var a in pingResult)
-                    if (a.Item2)
+                    if (a.isActive.HasValue)
                     {
-                        isAvailable = true;
-                        _planogram.SetAttributes(a.Item1, d, true);
+                        isActive = a.isActive.Value;
+                        _planogram.SetAttributes(a.Item1, d, isActive);
                     }
             }
 
             onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
 
-            return isAvailable;
+            return isActive;
         }
 
         internal readonly IEnumerable<IDispenser> _dispensers;

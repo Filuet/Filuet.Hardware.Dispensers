@@ -29,6 +29,7 @@ namespace PoC
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.dispensersListBox = new System.Windows.Forms.ListBox();
             this.label1 = new System.Windows.Forms.Label();
             this.addressesListBox = new System.Windows.Forms.ListBox();
@@ -55,8 +56,10 @@ namespace PoC
             this.label2 = new System.Windows.Forms.Label();
             this.skuComboBox = new System.Windows.Forms.ComboBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.planogramTreeView = new System.Windows.Forms.TreeView();
             this.savePlanogramButton = new System.Windows.Forms.Button();
-            this.planogramRichTextBox = new System.Windows.Forms.RichTextBox();
+            this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.pingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabControl2.SuspendLayout();
@@ -65,6 +68,7 @@ namespace PoC
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.qtyNumericUpDown)).BeginInit();
             this.tabPage2.SuspendLayout();
+            this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dispensersListBox
@@ -109,7 +113,7 @@ namespace PoC
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(726, 461);
+            this.tabControl1.Size = new System.Drawing.Size(800, 462);
             this.tabControl1.TabIndex = 5;
             // 
             // tabPage1
@@ -363,20 +367,32 @@ namespace PoC
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.planogramTreeView);
             this.tabPage2.Controls.Add(this.savePlanogramButton);
-            this.tabPage2.Controls.Add(this.planogramRichTextBox);
             this.tabPage2.Location = new System.Drawing.Point(4, 24);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(718, 433);
+            this.tabPage2.Size = new System.Drawing.Size(792, 434);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Planogram";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // planogramTreeView
+            // 
+            this.planogramTreeView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.planogramTreeView.Location = new System.Drawing.Point(3, 3);
+            this.planogramTreeView.Name = "planogramTreeView";
+            this.planogramTreeView.Size = new System.Drawing.Size(786, 397);
+            this.planogramTreeView.TabIndex = 2;
+            this.planogramTreeView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.planogramTreeView_MouseClick);
+            // 
             // savePlanogramButton
             // 
             this.savePlanogramButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.savePlanogramButton.Location = new System.Drawing.Point(644, 405);
+            this.savePlanogramButton.Enabled = false;
+            this.savePlanogramButton.Location = new System.Drawing.Point(714, 405);
             this.savePlanogramButton.Name = "savePlanogramButton";
             this.savePlanogramButton.Size = new System.Drawing.Size(75, 23);
             this.savePlanogramButton.TabIndex = 1;
@@ -384,23 +400,26 @@ namespace PoC
             this.savePlanogramButton.UseVisualStyleBackColor = true;
             this.savePlanogramButton.Click += new System.EventHandler(this.savePlanogramButton_Click);
             // 
-            // planogramRichTextBox
+            // contextMenuStrip1
             // 
-            this.planogramRichTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.planogramRichTextBox.Location = new System.Drawing.Point(3, 3);
-            this.planogramRichTextBox.Name = "planogramRichTextBox";
-            this.planogramRichTextBox.Size = new System.Drawing.Size(716, 396);
-            this.planogramRichTextBox.TabIndex = 0;
-            this.planogramRichTextBox.Text = "";
+            this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.pingToolStripMenuItem});
+            this.contextMenuStrip1.Name = "contextMenuStrip1";
+            this.contextMenuStrip1.Size = new System.Drawing.Size(99, 26);
+            // 
+            // pingToolStripMenuItem
+            // 
+            this.pingToolStripMenuItem.Name = "pingToolStripMenuItem";
+            this.pingToolStripMenuItem.Size = new System.Drawing.Size(98, 22);
+            this.pingToolStripMenuItem.Text = "Ping";
+            this.pingToolStripMenuItem.Click += new System.EventHandler(this.pingToolStripMenuItem_Click);
             // 
             // PoCForm
             // 
             this.AcceptButton = this.dispenseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(726, 461);
+            this.ClientSize = new System.Drawing.Size(800, 462);
             this.Controls.Add(this.tabControl1);
             this.Name = "PoCForm";
             this.Text = "Dispensing PoC";
@@ -414,6 +433,7 @@ namespace PoC
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.qtyNumericUpDown)).EndInit();
             this.tabPage2.ResumeLayout(false);
+            this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -438,7 +458,6 @@ namespace PoC
         private System.Windows.Forms.ComboBox skuComboBox;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.Button savePlanogramButton;
-        private System.Windows.Forms.RichTextBox planogramRichTextBox;
         private System.Windows.Forms.Button retestButton;
         private System.Windows.Forms.Button unlockButton;
         private System.Windows.Forms.Button resetButton;
@@ -448,5 +467,8 @@ namespace PoC
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TabPage tabPage4;
         private System.Windows.Forms.RichTextBox telemetryTextBox;
+        private System.Windows.Forms.TreeView planogramTreeView;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem pingToolStripMenuItem;
     }
 }
