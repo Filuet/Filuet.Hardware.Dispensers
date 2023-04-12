@@ -2,8 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -12,7 +14,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class PoG
     {
-        public PoGProduct this[string produitUid] => Products.FirstOrDefault(x => string.Equals(x.ProductUid, produitUid, System.StringComparison.InvariantCultureIgnoreCase));
+        public PoGProduct this[string productUid] => Products.FirstOrDefault(x => string.Equals(x.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase));
 
         public PoGRoute GetRoute(string address)
             => Products.SelectMany(x => x.Routes).FirstOrDefault(x => address == x.Address);
@@ -27,13 +29,62 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             => Products.FirstOrDefault(x => x.Addresses.Contains(address));
 
         [JsonPropertyName("products")]
-        public IEnumerable<PoGProduct> Products { get; set; }
+        public ICollection<PoGProduct> Products { get; set; }
 
         public static PoG Read(string serialized)
         {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
+        }
+
+        public void UpdateRoute(PoGRoute route, string productUid)
+        {
+            if (string.IsNullOrWhiteSpace(productUid))
+                throw new ArgumentException("Product UID is mandatory");
+
+            if (route == null || string.IsNullOrWhiteSpace(route.Address))
+                throw new ArgumentException("Address is mandatory");
+
+            productUid = productUid.Trim();
+
+            bool needToAdd = true;
+
+            List<PoGProduct> toRemove = new List<PoGProduct>();
+
+            foreach (var p in Products)
+            {
+                PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
+                if (existedRoute != null)
+                {
+                    if (string.Equals(p.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        existedRoute.Quantity = route.Quantity;
+                        existedRoute.MaxQuantity = route.MaxQuantity;
+                        existedRoute.Active = route.Active;
+                        needToAdd = false;
+                    }
+                    else
+                    {
+                        p.Routes.Remove(existedRoute);
+                        if (!p.Routes.Any())
+                            toRemove.Add(p);
+                    }
+                }
+
+                p.Routes = p.Routes.OrderBy(x => x.Address).ToList();
+            }
+
+            if (needToAdd)
+            {
+                PoGProduct p = this[productUid];
+                if (p != null)
+                    p.Routes.Add(route);
+                else Products.Add(new PoGProduct { ProductUid = productUid, Routes = new List<PoGRoute> { route } });
+            }
+
+            foreach (var p in toRemove)
+                Products.Remove(p);
         }
 
         [JsonIgnore]
@@ -56,7 +107,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             options.WriteIndented = true;
-            return JsonSerializer.Serialize(Products, options);
+            return JsonSerializer.Serialize(Products.OrderBy(x => x.ProductUid), options);
         }
     }
 
@@ -66,7 +117,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public string ProductUid { get; set; }
 
         [JsonPropertyName("routes")]
-        public IEnumerable<PoGRoute> Routes { get; set; }
+        public ICollection<PoGRoute> Routes { get; set; }
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Routes.Select(x => x.Address);
@@ -81,6 +132,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonPropertyName("q")]
         public ushort Quantity { get; set; }
+
+        [JsonPropertyName("m")]
+        public ushort MaxQuantity { get; set; } = 10;
 
         [JsonPropertyName("a")]
         [JsonConverter(typeof(BoolToNumJsonConverter))]

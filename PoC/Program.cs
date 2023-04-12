@@ -30,7 +30,7 @@ namespace PoC
             form.Show();
 
             IServiceProvider sp = new ServiceCollection()
-                .AddSingleton(PoG.Read("[]"))
+                .AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
                 .AddVendingMachine(sp =>
                 {
                     ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>(); 
