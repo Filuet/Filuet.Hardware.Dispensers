@@ -2,10 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -87,8 +85,26 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                 Products.Remove(p);
         }
 
+        public void RemoveRoute(PoGRoute route)
+        {
+            PoGProduct toDelete = null;
+            foreach (var p in Products)
+            {
+                PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
+                if (existedRoute != null)
+                {
+                    p.Routes.Remove(existedRoute);
+                    if (p.Routes.Count == 0)
+                        toDelete = p;
+                    break;
+                }
+            }
+            if (toDelete != null)
+                Products.Remove(toDelete);
+        }
+
         [JsonIgnore]
-        public IEnumerable<string> Addresses => Products.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
+        public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
 
         public void SetAttributes(string route, IDispenser dispenser, bool available)
         {
