@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -29,15 +30,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonPropertyName("products")]
         public ICollection<PoGProduct> Products { get; set; }
 
-        public static PoG Read(string serialized)
-        {
+        public static PoG Read(string serialized) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
         }
 
-        public void UpdateRoute(PoGRoute route, string productUid)
-        {
+        public void UpdateRoute(PoGRoute route, string productUid) {
             if (string.IsNullOrWhiteSpace(productUid))
                 throw new ArgumentException("Product UID is mandatory");
 
@@ -50,20 +49,16 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
             List<PoGProduct> toRemove = new List<PoGProduct>();
 
-            foreach (var p in Products)
-            {
+            foreach (var p in Products) {
                 PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
-                if (existedRoute != null)
-                {
-                    if (string.Equals(p.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase))
-                    {
+                if (existedRoute != null) {
+                    if (string.Equals(p.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase)) {
                         existedRoute.Quantity = route.Quantity;
                         existedRoute.MaxQuantity = route.MaxQuantity;
                         existedRoute.Active = route.Active;
                         needToAdd = false;
                     }
-                    else
-                    {
+                    else {
                         p.Routes.Remove(existedRoute);
                         if (!p.Routes.Any())
                             toRemove.Add(p);
@@ -73,8 +68,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                 p.Routes = p.Routes.OrderBy(x => x.Address).ToList();
             }
 
-            if (needToAdd)
-            {
+            if (needToAdd) {
                 PoGProduct p = this[productUid];
                 if (p != null)
                     p.Routes.Add(route);
@@ -85,14 +79,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                 Products.Remove(p);
         }
 
-        public void RemoveRoute(PoGRoute route)
-        {
+        public void RemoveRoute(PoGRoute route) {
             PoGProduct toDelete = null;
-            foreach (var p in Products)
-            {
+            foreach (var p in Products) {
                 PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
-                if (existedRoute != null)
-                {
+                if (existedRoute != null) {
                     p.Routes.Remove(existedRoute);
                     if (p.Routes.Count == 0)
                         toDelete = p;
@@ -106,23 +97,20 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonIgnore]
         public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
 
-        public void SetAttributes(string route, IDispenser dispenser, bool available)
-        {
+        public void SetAttributes(string route, IDispenser dispenser, bool available) {
             foreach (var p in Products)
                 foreach (var r in p.Routes)
-                    if (r.Address == route)
-                    {
+                    if (r.Address == route) {
                         r.Active = dispenser != null && available;
                         r.Dispenser = dispenser;
                         break;
                     }
         }
 
-        public override string ToString()
-        {
+        public string ToString(bool writeIndented = true) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
-            options.WriteIndented = true;
+            options.WriteIndented = writeIndented;
             return JsonSerializer.Serialize(Products.OrderBy(x => x.ProductUid), options);
         }
     }
