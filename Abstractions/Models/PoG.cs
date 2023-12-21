@@ -30,6 +30,12 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonPropertyName("products")]
         public ICollection<PoGProduct> Products { get; set; }
 
+        [JsonIgnore]
+        public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).OrderBy(x => x).ToList();
+
+        [JsonIgnore]
+        public IEnumerable<string> ActiveAddresses => Products?.SelectMany(x => x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => r.Address)).OrderBy(x => x).ToList();
+
         public static PoG Read(string serialized) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
@@ -93,9 +99,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             if (toDelete != null)
                 Products.Remove(toDelete);
         }
-
-        [JsonIgnore]
-        public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).ToList();
 
         public void SetAttributes(string route, IDispenser dispenser, bool available) {
             foreach (var p in Products)
