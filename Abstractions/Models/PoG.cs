@@ -129,6 +129,12 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonIgnore]
         public IEnumerable<string> Addresses => Routes.Select(x => x.Address);
 
+        [JsonIgnore]
+        public int Quantity => Routes?.Sum(x => x.Quantity) ?? 0;
+
+        [JsonIgnore]
+        public int MaxQuantity => Routes?.Sum(x => x.MaxQuantity) ?? 0;
+
         public override string ToString() => ProductUid;
     }
 
