@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-	<PackageVersion>0.0.14</PackageVersion>
+	<PackageVersion>0.0.15</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
