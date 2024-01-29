@@ -31,10 +31,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public ICollection<PoGProduct> Products { get; set; }
 
         [JsonIgnore]
-        public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).OrderBy(x => x).ToList();
+        public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).OrderBy(x => x.Length).ThenBy(x => x).ToList();
 
         [JsonIgnore]
-        public IEnumerable<string> ActiveAddresses => Products?.SelectMany(x => x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => r.Address)).OrderBy(x => x).ToList();
+        public IEnumerable<string> ActiveAddresses => Products?.SelectMany(x => x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => r.Address)).OrderBy(x => x.Length).ThenBy(x => x).ToList();
 
         public static PoG Read(string serialized) {
             JsonSerializerOptions options = new JsonSerializerOptions();
