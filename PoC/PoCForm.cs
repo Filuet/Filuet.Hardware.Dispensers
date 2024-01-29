@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
+using Filuet.Hardware.Dispensers.Abstractions.Helpers;
 
 namespace PoC
 {
