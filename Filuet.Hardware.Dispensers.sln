@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31624.102
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34004.107
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Filuet.Hardware.Dispensers.Abstractions", "Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj", "{77CF1602-09B6-4519-9720-876C4C4D99C6}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus", "Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj", "{419AFBCA-437B-4ECB-B089-755B0863DE28}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PoC", "PoC\PoC.csproj", "{5B7ACDFC-D2EF-44E6-B8A8-29D0591C6453}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpoExtractor", "ExpoExtractor\ExpoExtractor.csproj", "{1665FAFF-6EB9-4667-AE65-9E24A8488390}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +39,10 @@ Global
 		{5B7ACDFC-D2EF-44E6-B8A8-29D0591C6453}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B7ACDFC-D2EF-44E6-B8A8-29D0591C6453}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B7ACDFC-D2EF-44E6-B8A8-29D0591C6453}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1665FAFF-6EB9-4667-AE65-9E24A8488390}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1665FAFF-6EB9-4667-AE65-9E24A8488390}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1665FAFF-6EB9-4667-AE65-9E24A8488390}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1665FAFF-6EB9-4667-AE65-9E24A8488390}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

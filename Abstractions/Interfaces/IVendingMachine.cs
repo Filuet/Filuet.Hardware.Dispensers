@@ -10,25 +10,16 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     public interface IVendingMachine
     {
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
-
         event EventHandler<DispenseEventArgs> onDispensing;
-
         event EventHandler<DispenseEventArgs> onDispensed;
-
         event EventHandler<DispenseEventArgs> onAbandonment;
-
         event EventHandler<VendingMachineTestEventArgs> onTest;
-
         event EventHandler<DispenseFailEventArgs> onFailed;
-
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
-
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
         Task Dispense(params (string productUid, ushort quantity)[] items);
-
         void Unlock(params uint[] machines);
-
         Task Test();
     }
 }

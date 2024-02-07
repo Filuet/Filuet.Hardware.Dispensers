@@ -1,0 +1,16 @@
+[
+  {
+    "Alias": "Machine 1",
+    "PortNumber": 5050,
+    "Address": "0x01",
+    "IpOrSerialAddress": "COM1",
+    "PollFrequencyHz": 0.33
+  },
+  {
+    "Alias": "Machine 2",
+    "PortNumber": 5051,
+    "Address": "0x01",
+    "IpOrSerialAddress": "172.16.7.103",
+    "PollFrequencyHz": 0.33
+  }
+]

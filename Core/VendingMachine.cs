@@ -3,7 +3,6 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core.Strategy;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -26,20 +25,17 @@ namespace Filuet.Hardware.Dispensers.Core
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
             DispensingChainBuilder chainBuilder,
-            PoG planogram)
-        {
+            PoG planogram) {
             _dispensers = dispensers;
             _lightEmitters = lightEmitters;
 
-            foreach (IDispenser d in _dispensers)
-            {
+            foreach (IDispenser d in _dispensers) {
                 d.onTest += (sender, e) => onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
                 d.onDataMoving += (sender, e) => onDataMoving?.Invoke(sender, e);
                 d.onDispensing += (sender, e) => onDispensing?.Invoke(sender, e);
                 d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
-                d.onReset += (sender, e) =>
-                {
+                d.onReset += (sender, e) => {
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutes();
                 };
@@ -54,39 +50,32 @@ namespace Filuet.Hardware.Dispensers.Core
             Test();
         }
 
-        public async Task Dispense(params (string productUid, ushort quantity)[] items)
-        {
+        public async Task Dispense(params (string productUid, ushort quantity)[] items) {
             List<string> routesToPing = new List<string>();
             foreach (var i in items)
                 routesToPing.AddRange(_planogram[i.productUid].Addresses);
 
-            try
-            {
+            try {
                 await Test(); // update status of dispenser
 
-                IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address =>
-                {
+                IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address => {
                     PoGRoute route = _planogram.GetRoute(address);
                     return route.Dispenser.GetAddressRank(address);
                 }, x => PingRoute(x));
 
                 IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
 
-                foreach (var dispenser in dispensers)
-                {
+                foreach (var dispenser in dispensers) {
                     await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
                 }
             }
-            catch (InvalidOperationException ex)
-            {
+            catch (InvalidOperationException ex) {
                 onFailed?.Invoke(this, new DispenseFailEventArgs { message = ex.Message });
             }
         }
 
-        public void Unlock(params uint[] machines)
-        {
-            Parallel.ForEach(_dispensers, x =>
-            {
+        public void Unlock(params uint[] machines) {
+            Parallel.ForEach(_dispensers, x => {
                 if (!machines.Any() || machines.Contains(x.Id))
                     x.Unlock();
             });
@@ -96,10 +85,8 @@ namespace Filuet.Hardware.Dispensers.Core
 
         private async Task PingRoutes()
             => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
-                .ContinueWith(x =>
-                {
-                    Parallel.ForEach(_dispensers, d =>
-                    {
+                .ContinueWith(x => {
+                    Parallel.ForEach(_dispensers, d => {
                         var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();
                         foreach (var a in pingResult)
                             if (a.isActive.HasValue)
@@ -109,19 +96,16 @@ namespace Filuet.Hardware.Dispensers.Core
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
                 });
 
-        private bool PingRoute(string route)
-        {
+        private bool PingRoute(string route) {
             bool isActive = false;
 
-            foreach (var d in _dispensers)
-            {
+            foreach (var d in _dispensers) {
                 if (!d.IsAvailable)
                     continue;
 
                 var pingResult = d.Ping(route);
                 foreach (var a in pingResult)
-                    if (a.isActive.HasValue)
-                    {
+                    if (a.isActive.HasValue) {
                         isActive = a.isActive.Value;
                         _planogram.SetAttributes(a.Item1, d, isActive);
                     }
