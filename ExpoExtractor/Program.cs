@@ -51,13 +51,12 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
             .AddPlanogram(sp.GetRequiredService<PoG>())
             .Build();
 
-        vendingMachine.onDispensing += (sender, e) => Console.WriteLine($"Dispensing is started {e.address}");
-        vendingMachine.onDispensed += (sender, e) =>
-        {
+        vendingMachine.onDispensing += (sender, e) => Console.WriteLine($"{e.address} Dispensing started");
+        vendingMachine.onDispensed += (sender, e) => {
             PoG planogram = sp.GetRequiredService<PoG>();
             planogram.GetRoute(e.address).Quantity--;
             planogram.Write("test_planogram.json");
-            Console.WriteLine($"Dispensing is finished {e}. You can carry on with dispensing");
+            Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
         };
         vendingMachine.onAbandonment += (sender, e) => Console.WriteLine($"Likely that products were abandoned {e}");
         vendingMachine.onFailed += (sender, e) => Console.WriteLine(e.ToString());
