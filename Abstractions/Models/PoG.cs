@@ -1,6 +1,7 @@
 ﻿using Filuet.Infrastructure.Abstractions.Converters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -40,6 +41,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
+        }
+
+        public void Write(string path)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.Converters.Add(new BoolToNumJsonConverter());
+            File.WriteAllText(path, JsonSerializer.Serialize(Products, options));
         }
 
         public void UpdateRoute(PoGRoute route, string productUid) {
