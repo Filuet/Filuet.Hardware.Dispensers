@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ExpoExtractor.Controllers
@@ -12,13 +14,11 @@ namespace ExpoExtractor.Controllers
     [Route("dispensing")]
     public class DispensingController : ControllerBase
     {
-        public DispensingController(IVendingMachine vendingMachine, PoG planogram, ILogger<DispensingController> logger)
-        {
+        public DispensingController(IVendingMachine vendingMachine, PoG planogram, ILogger<DispensingController> logger) {
             _vendingMachine = vendingMachine;
             _planogram = planogram;
             _logger = logger;
-            _vendingMachine.onTest += (sender, e) =>
-            {
+            _vendingMachine.onTest += (sender, e) => {
                 if (_message == null)
                     _message = new List<MachineTestResult>();
 
@@ -31,19 +31,30 @@ namespace ExpoExtractor.Controllers
         public async Task Extract(IEnumerable<ExtractSlot> toDispense)
             => await _vendingMachine.Dispense(toDispense.Select(x => (x.Sku, (ushort)x.Quantity)).ToArray());
 
+        [HttpGet("status")]
+        public IActionResult Status() {
+            if (StatusSingleton.Status == null || string.IsNullOrWhiteSpace(StatusSingleton.Status.Status))
+                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
+
+            string result = JsonSerializer.Serialize(StatusSingleton.Status);
+
+            if (StatusSingleton.Status.Action != "pending" && !(StatusSingleton.Status.Action == "dispensing" && StatusSingleton.Status.Status == "success"))
+                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
+
+            return Ok(result);
+        }
+
 
         [HttpGet("stock")]
         public IEnumerable<ProductStock> Stock()
-            => _planogram.Products.Select(x => new ProductStock
-            {
+            => _planogram.Products.Select(x => new ProductStock {
                 Sku = x.ProductUid,
                 Quantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.Quantity).Sum(),
                 MaxQuantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.MaxQuantity).Sum(),
             });
 
         [HttpGet("test")]
-        public async Task<IEnumerable<MachineTestResult>> Test()
-        {
+        public async Task<IEnumerable<MachineTestResult>> Test() {
             _message = new List<MachineTestResult>();
             await _vendingMachine.Test();
 
