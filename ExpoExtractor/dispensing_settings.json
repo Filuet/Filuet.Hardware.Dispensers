@@ -3,14 +3,16 @@
     "Alias": "Machine 1",
     "PortNumber": 5050,
     "Address": "0x01",
-    "IpOrSerialAddress": "COM1",
-    "PollFrequencyHz": 0.33
+    "IpOrSerialAddress": "COM11",
+    "PollFrequencyHz": 0.33,
+    "LightSettings": { "LightsAreNormallyOn": true }
   },
   {
     "Alias": "Machine 2",
-    "PortNumber": 5051,
+    "PortNumber": 5050,
     "Address": "0x01",
-    "IpOrSerialAddress": "172.16.7.103",
-    "PollFrequencyHz": 0.33
+    "IpOrSerialAddress": "COM9",
+    "PollFrequencyHz": 0.33,
+    "LightSettings": { "LightsAreNormallyOn": true }
   }
 ]

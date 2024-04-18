@@ -21,6 +21,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<DispenseFailEventArgs> onFailed;
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
+        public event EventHandler<UnlockEventArgs> onMachineUnlocked;
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -76,8 +77,10 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public void Unlock(params uint[] machines) {
             Parallel.ForEach(_dispensers, x => {
-                if (!machines.Any() || machines.Contains(x.Id))
+                if (!machines.Any() || machines.Contains(x.Id)) {
                     x.Unlock();
+                    onMachineUnlocked?.Invoke(this, new UnlockEventArgs { machine = x.Id });
+                }
             });
         }
 

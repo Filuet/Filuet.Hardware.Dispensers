@@ -17,6 +17,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseFailEventArgs> onFailed;
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
+        event EventHandler<UnlockEventArgs> onMachineUnlocked;
 
         Task Dispense(params (string productUid, ushort quantity)[] items);
         void Unlock(params uint[] machines);

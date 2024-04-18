@@ -1,3 +1,4 @@
+using ExpoExtractor;
 using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
@@ -5,6 +6,12 @@ using Filuet.Hardware.Dispensers.Core.Strategy;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication;
 using Filuet.Infrastructure.Communication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text.Json;
 
@@ -54,11 +61,36 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
             .AddPlanogram(sp.GetRequiredService<PoG>())
             .Build();
 
-        vendingMachine.onDispensing += (sender, e) => Console.WriteLine($"Dispensing is started {e.address}");
-        vendingMachine.onDispensed += (sender, e) => Console.WriteLine($"Dispensing is finished {e}");
-        vendingMachine.onAbandonment += (sender, e) => Console.WriteLine($"Likely that products were abandoned {e}");
-        vendingMachine.onFailed += (sender, e) => Console.WriteLine(e.ToString());
-        vendingMachine.onLightsChanged += (sender, e) => Console.WriteLine($"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+        vendingMachine.onDispensing += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = $"{e.address} Dispensing started" };
+            Console.WriteLine($"{e.address} Dispensing started");
+        };
+        vendingMachine.onDispensed += (sender, e) => {
+            PoG planogram = sp.GetRequiredService<PoG>();
+            planogram.GetRoute(e.address).Quantity--;
+            planogram.Write("test_planogram.json");
+
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = $"{e.address} Dispensing completed. You can carry on with dispensing" };
+            Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
+        };
+        vendingMachine.onAbandonment += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" };
+            Console.WriteLine($"Likely that products were abandoned {e}");
+        };
+        vendingMachine.onFailed += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() };
+            Console.WriteLine(e.ToString());
+        };
+
+        vendingMachine.onLightsChanged += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "lights", Status = "success", Message = $"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}" };
+            Console.WriteLine($"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+        };
+
+        vendingMachine.onMachineUnlocked += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "unlock", Status = "success", Message = $"{e.machine} is unlocked" };
+            Console.WriteLine($"{e.machine} is unlocked");
+        };
         vendingMachine.onPlanogramClarification += (sender, e) => {
             //form.Planogram = e.Planogram;
             //form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");
@@ -72,10 +104,10 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment()) {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment()) {
+app.UseSwagger();
+app.UseSwaggerUI();
+//}
 
 app.UseHttpsRedirection();
 
