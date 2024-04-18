@@ -38,7 +38,10 @@ namespace ExpoExtractor.Controllers
 
             string result = JsonSerializer.Serialize(StatusSingleton.Status);
 
-            if (StatusSingleton.Status.Action != "pending" && !(StatusSingleton.Status.Action == "dispensing" && StatusSingleton.Status.Status == "success"))
+            if (StatusSingleton.Status.Action == "dispensing" && StatusSingleton.Status.Status == "success")
+                return Ok(result);
+
+            if (StatusSingleton.Status.Action != "pending")
                 StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
 
             return Ok(result);
