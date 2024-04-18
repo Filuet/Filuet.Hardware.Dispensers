@@ -2,9 +2,9 @@ using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -33,6 +33,8 @@ namespace ExpoExtractor.Controllers
 
         [HttpGet("status")]
         public IActionResult Status() {
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {StatusSingleton.Status.Action}");
+
             if (StatusSingleton.Status == null || string.IsNullOrWhiteSpace(StatusSingleton.Status.Status))
                 StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
 
@@ -40,6 +42,11 @@ namespace ExpoExtractor.Controllers
 
             if (StatusSingleton.Status.Action == "dispensing" && StatusSingleton.Status.Status == "success")
                 return Ok(result);
+
+            if (StatusSingleton.Status.Action == "dispensed") {
+                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
+                return Ok(result);
+            }
 
             if (StatusSingleton.Status.Action != "pending")
                 StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };

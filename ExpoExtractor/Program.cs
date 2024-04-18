@@ -18,15 +18,6 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddCors(options => {
-    options.AddPolicy("MyAllowedOrigins",
-        policy => {
-            policy.WithOrigins("http://localhost:5100") // note the port is included 
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
-});
-
 // Add services to the container
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -63,7 +54,7 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
 
         vendingMachine.onDispensing += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = $"{e.address} Dispensing started" };
-            Console.WriteLine($"{e.address} Dispensing started");
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.address} Dispensing started");
         };
         vendingMachine.onDispensed += (sender, e) => {
             PoG planogram = sp.GetRequiredService<PoG>();
@@ -71,25 +62,25 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
             planogram.Write("test_planogram.json");
 
             StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = $"{e.address} Dispensing completed. You can carry on with dispensing" };
-            Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.address} Dispensing completed. You can carry on with dispensing");
         };
         vendingMachine.onAbandonment += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" };
-            Console.WriteLine($"Likely that products were abandoned {e}");
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Likely that products were abandoned {e}");
         };
         vendingMachine.onFailed += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() };
-            Console.WriteLine(e.ToString());
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e}");
         };
 
         vendingMachine.onLightsChanged += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "lights", Status = "success", Message = $"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}" };
-            Console.WriteLine($"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
         };
 
         vendingMachine.onMachineUnlocked += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "unlock", Status = "success", Message = $"{e.machine} is unlocked" };
-            Console.WriteLine($"{e.machine} is unlocked");
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.machine} is unlocked");
         };
         vendingMachine.onPlanogramClarification += (sender, e) => {
             //form.Planogram = e.Planogram;
@@ -101,6 +92,12 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
         return vendingMachine;
     }, null);
 
+builder.Services.AddCors(options => options.AddPolicy("CorsPolicy", builder =>
+    builder.AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .SetIsOriginAllowed(host => true)));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -110,8 +107,7 @@ app.UseSwaggerUI();
 //}
 
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
+app.UseCors("CorsPolicy");
 
 app.MapControllers();
 
