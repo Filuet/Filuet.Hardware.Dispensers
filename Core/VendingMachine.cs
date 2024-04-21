@@ -22,6 +22,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
+        public event EventHandler<DispenserEventArgs> onWaitingProductsToBeRemoved;
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -40,6 +41,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutes();
                 };
+                d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, new DispenserEventArgs { dispenser = d });
             }
 
             foreach (ILightEmitter l in _lightEmitters)

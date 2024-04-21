@@ -82,6 +82,12 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
             StatusSingleton.Status = new CurrentStatus { Action = "unlock", Status = "success", Message = $"{e.machine} is unlocked" };
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.machine} is unlocked");
         };
+
+        vendingMachine.onWaitingProductsToBeRemoved += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser #{e.dispenser.Id} is waiting for products to be removed" };
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser #{e.dispenser.Id} is waiting for products to be removed");
+        };
+
         vendingMachine.onPlanogramClarification += (sender, e) => {
             //form.Planogram = e.Planogram;
             //form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");

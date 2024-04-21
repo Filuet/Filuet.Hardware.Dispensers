@@ -22,6 +22,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<bool> onLightsChanged;
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
+        public event EventHandler<object> onWaitingProductsToBeRemoved;
         /// <summary>
         /// Fires when the customer forget to pick up the products
         /// </summary>
@@ -147,6 +148,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                 switch (state?.internalState)
                                 {
                                     case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
+                                        onWaitingProductsToBeRemoved?.Invoke(this, null);
                                         state = null;
 
                                         Stopwatch sw1 = new Stopwatch();
@@ -185,25 +187,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                         }
                                         else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector)
                                         {
-                                            // По идее такое м. быть когда в процессе спуска продукт упал и перестал загараживать детектор или наоборот, перевернулся и перегородил.
-                                            // Это не значит что продукт не был выдан
+                                            // This could happen when during the descent the product fell and stopped blocking the detector or, conversely, turned over and blocked it.
+                                            // This doesn't mean that the product wasn't issued
                                         }
-                                        else
-                                        { }
+
                                         break;
                                     default:
-                                        var yyy = state;
                                         break;
                                 }
-                            }
-                            else
-                            {
-                            
                             }
 
                             break;
                         default:
-                            int y = 0;
                             break;
                     }
                 }

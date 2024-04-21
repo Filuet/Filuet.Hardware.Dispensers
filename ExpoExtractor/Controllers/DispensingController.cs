@@ -40,7 +40,7 @@ namespace ExpoExtractor.Controllers
 
             string result = JsonSerializer.Serialize(StatusSingleton.Status);
 
-            if (StatusSingleton.Status.Action == "dispensing" && StatusSingleton.Status.Status == "success")
+            if ((StatusSingleton.Status.Action == "dispensing" || StatusSingleton.Status.Action == "takeproducts") && StatusSingleton.Status.Status == "success")
                 return Ok(result);
 
             if (StatusSingleton.Status.Action == "dispensed") {

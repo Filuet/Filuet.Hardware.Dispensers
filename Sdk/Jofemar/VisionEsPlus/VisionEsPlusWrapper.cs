@@ -21,6 +21,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
+        public event EventHandler<object> onWaitingProductsToBeRemoved;
 
         public VisionEsPlusWrapper(uint id, VisionEsPlus machineAdapter)
         {
@@ -32,6 +33,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
             _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
             _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
+            _machineAdapter.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(this, e);
         }
 
         public async Task Test()
