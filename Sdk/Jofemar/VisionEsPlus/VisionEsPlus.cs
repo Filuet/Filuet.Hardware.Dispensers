@@ -2,16 +2,13 @@
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
-using Filuet.Infrastructure.Abstractions.Helpers;
 using Filuet.Infrastructure.Communication;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +19,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<bool> onLightsChanged;
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<object> onWaitingProductsToBeRemoved;
+        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
         /// <summary>
         /// Fires when the customer forget to pick up the products
         /// </summary>
@@ -148,7 +145,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                 switch (state?.internalState)
                                 {
                                     case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
-                                        onWaitingProductsToBeRemoved?.Invoke(this, null);
+                                        onWaitingProductsToBeRemoved?.Invoke(this, DispenseEventArgs.Create(a.Key));
                                         state = null;
 
                                         Stopwatch sw1 = new Stopwatch();

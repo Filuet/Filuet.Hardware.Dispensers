@@ -21,7 +21,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
-        public event EventHandler<object> onWaitingProductsToBeRemoved;
+        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
 
         public VisionEsPlusWrapper(uint id, VisionEsPlus machineAdapter)
         {

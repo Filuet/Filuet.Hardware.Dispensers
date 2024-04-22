@@ -8,7 +8,6 @@ using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication;
 using Filuet.Infrastructure.Communication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -57,10 +56,6 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.address} Dispensing started");
         };
         vendingMachine.onDispensed += (sender, e) => {
-            PoG planogram = sp.GetRequiredService<PoG>();
-            planogram.GetRoute(e.address).Quantity--;
-            planogram.Write("test_planogram.json");
-
             StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = $"{e.address} Dispensing completed. You can carry on with dispensing" };
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: {e.address} Dispensing completed. You can carry on with dispensing");
         };
@@ -84,8 +79,12 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
         };
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) => {
-            StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser #{e.dispenser.Id} is waiting for products to be removed" };
-            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser #{e.dispenser.Id} is waiting for products to be removed");
+            PoG planogram = sp.GetRequiredService<PoG>();
+            planogram.GetRoute(e.address).Quantity--;
+            planogram.Write("test_planogram.json");
+
+            StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" };
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
         };
 
         vendingMachine.onPlanogramClarification += (sender, e) => {
