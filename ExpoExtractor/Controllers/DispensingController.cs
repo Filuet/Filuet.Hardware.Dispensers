@@ -33,7 +33,8 @@ namespace ExpoExtractor.Controllers
 
         [HttpGet("status")]
         public IActionResult Status() {
-            Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {StatusSingleton.Status.Action}");
+            if (StatusSingleton.Status != null)
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {StatusSingleton.Status.Action}");
 
             if (StatusSingleton.Status == null || string.IsNullOrWhiteSpace(StatusSingleton.Status.Status))
                 StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
