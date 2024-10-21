@@ -3,6 +3,7 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
 using Filuet.Hardware.Dispensers.Core.Strategy;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
+using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication;
 using Filuet.Infrastructure.Communication;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -11,7 +12,6 @@ using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Net;
-using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication;
 
 namespace PoC
 {
@@ -27,9 +27,10 @@ namespace PoC
             PoCForm form = new PoCForm();
 
             form.Show();
+            PoG planogram = PoG.Read(File.ReadAllText("test_planogram.json"));
 
             IServiceProvider sp = new ServiceCollection()
-                .AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
+                .AddSingleton(planogram)
                 .AddVendingMachine(sp => {
                     ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
 
@@ -37,7 +38,6 @@ namespace PoC
                     .AddChainBuilder(new DispensingChainBuilder(sp.GetRequiredService<PoG>()))
                         .AddDispensers(() => {
                             List<IDispenser> result = new List<IDispenser>();
-
                             #region Machine1
                             VisionEsPlusSettings settings1 = new VisionEsPlusSettings {
                                 Alias = "Machine 1",
@@ -45,18 +45,19 @@ namespace PoC
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
                                 IpOrSerialAddress = "172.16.7.103",//"COM9",// 
                                 LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
-                                PollFrequencyHz = 0.33m
+                                PollFrequencyHz = 0.33m,
+                                MaxExtractWeightPerTime = 5000
                             };
 
                             ICommunicationChannel channel1 = //new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
                             new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
 
-                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(channel1, settings1));
+                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(channel1, settings1, address => planogram.GetProduct(address).Weight));
                             result.Add(machine1);
                             integratedEmitters.Add(machine1);
                             #endregion
 
-                            // Uncomment to enable machine1
+                            // Uncomment to enable machine2
                             //#region Machine2
                             //VisionEsPlusSettings settings2 = new VisionEsPlusSettings
                             //{

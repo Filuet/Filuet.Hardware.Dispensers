@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -133,6 +132,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonPropertyName("routes")]
         public ICollection<PoGRoute> Routes { get; set; }
+
+        [JsonPropertyName("weight")]
+        public int Weight { get; set; }
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Routes.Select(x => x.Address);

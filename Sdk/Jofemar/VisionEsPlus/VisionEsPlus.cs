@@ -1,5 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
+using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
 using Filuet.Infrastructure.Communication;
@@ -31,9 +32,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
-        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings)
+        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<string, int> getWeightByAddress = null)
         {
             _settings = settings;
+            _getWeightByAddress = getWeightByAddress;
             byte machineAddress = (byte)(byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
             _commandBody = new byte[] { 0x02 /* start of the message */, 0x30 /* Filler1 */, 0x30 /* Filler2 */,
                 machineAddress /* Machine address (1-31) 0x81*/, 0 /* Type */, 0xff /* Param1 */, 0xff /* Param2 */, 0 /* CheckSum1 */, 0  /* CheckSum1 */, 0x03  /* End of message */ };
@@ -44,23 +46,16 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         #region Actions
         internal void ChangeLight(bool isOn)
-        {
-            ExecuteCommand(ChangeLightCommand(isOn), $"Lights {(isOn ? "on" : "off")}", code =>
-            {
+            => ExecuteCommand(ChangeLightCommand(isOn), $"Lights {(isOn ? "on" : "off")}", code => {
                 if (code == VisionEsPlusResponseCodes.Ok)
                     onLightsChanged?.Invoke(this, isOn); // Send an event to the business layer
             });
-        }
 
         internal void Reset()
-        {
-            ExecuteCommand(ResetCommand(), "Reset");
-        }
+            => ExecuteCommand(ResetCommand(), "Reset");
 
         internal void Unlock()
-        {
-            ExecuteCommand(UnlockTheDoor(), "Unlock");
-        }
+            => ExecuteCommand(UnlockTheDoor(), "Unlock");
 
         internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> Status()
             => await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
@@ -107,14 +102,27 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             List<DispenseEventArgs> droppedIntoTheElevatorProducts = new List<DispenseEventArgs>();
 
+            int addedWeight = 0; // #5122
+
             foreach (var a in map)
             {
+                int productWeight = _getWeightByAddress?.Invoke(a.Key.ToString()) ?? VisionEsPlusSettings.DEFAULT_PRODUCT_WEIGHT_GR;
+
                 for (uint i = 1; i <= a.Value; i++)
                 {
                     state = null;
 
+                    addedWeight += productWeight;
+
+                    bool isTheVeryLastProduct = a.Key == map.Last().Key && i == a.Value;
+                    bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime <= addedWeight;
+                    bool sendVEND = isMaxWeightThresholdReached || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
+
                     onDispensing?.Invoke(this, DispenseEventArgs.Create(a.Key));
-                    Dispense(a.Key, a.Key == map.Last().Key && i == a.Value/*Send VEND command if last element*/);
+                    Dispense(a.Key, sendVEND);
+
+                    if (sendVEND)
+                        addedWeight = 0; // flush elevator used weight
 
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
@@ -207,9 +215,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
-        {
-            ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
-        }
+            => ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
 
         internal bool? IsBeltActive(uint machineId, string route)
         {
@@ -332,6 +338,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         {
             if (arr == null || arr.Length != 7 || arr[2] != 0x50)
                 return DoorState.Unknown;
+
             var doorState = (DoorState)arr[3];
             return doorState;
         }
@@ -405,7 +412,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         internal string Alias => _settings.Alias;
 
-        private VisionEsPlusSettings _settings;
+        private readonly VisionEsPlusSettings _settings;
+        private readonly Func<string, int> _getWeightByAddress;
         private readonly byte[] _commandBody;
         private ICommunicationChannel _channel;
     }

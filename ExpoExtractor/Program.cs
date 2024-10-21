@@ -23,7 +23,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
+PoG planogram = PoG.Read(File.ReadAllText("test_planogram.json"));
+builder.Services.AddSingleton(planogram)
     .AddVendingMachine(sp => {
         ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
         IVendingMachine vendingMachine = new VendingMachineBuilder()
@@ -40,7 +41,7 @@ builder.Services.AddSingleton(PoG.Read(File.ReadAllText("test_planogram.json")))
                     else
                         channel = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(curSettings.IpOrSerialAddress), curSettings.PortNumber); });
 
-                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper((uint)++id, new VisionEsPlus(channel, curSettings));
+                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper((uint)++id, new VisionEsPlus(channel, curSettings, address => planogram.GetProduct(address).Weight));
                     result.Add(machine);
                     integratedEmitters.Add(machine);
                 }

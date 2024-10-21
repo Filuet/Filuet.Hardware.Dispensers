@@ -59,7 +59,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public async Task MultiplyDispensing(IDictionary<string, uint> map)
             => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
 
-
         public IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses)
         {
             foreach (string address in addresses)
@@ -93,21 +92,16 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         public void Unlock()
-        {
-            _machineAdapter.Unlock();
-        }
+            => _machineAdapter.Unlock();
 
-        public override string ToString() => $"{Id} [{typeof(VisionEsPlus).Name}]. {(IsAvailable ? "Available" : "Unavailable")}";
+        public override string ToString()
+            => $"{Id} [{typeof(VisionEsPlus).Name}]. {(IsAvailable ? "Available" : "Unavailable")}";
 
         public void LightOn()
-        {
-            _machineAdapter.ChangeLight(true);
-        }
+            => _machineAdapter.ChangeLight(true);
 
         public void LightOff()
-        {
-            _machineAdapter.ChangeLight(false);
-        }
+            => _machineAdapter.ChangeLight(false);
 
         public string Alias => _machineAdapter.Alias;
 
