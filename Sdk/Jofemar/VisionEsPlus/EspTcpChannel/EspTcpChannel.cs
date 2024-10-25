@@ -22,7 +22,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication
             TcpClient client = new TcpClient();
             client.Connect(_settings.Endpoint);
             client.ReceiveTimeout = (int)_settings.ReceiveTimeout.TotalMilliseconds;
-
+            
             NetworkStream stream = client.GetStream();
 
             stream.Write(data, 0, data.Length);

@@ -37,6 +37,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <remarks>if isActive is null than the address doesn't belong to the dispenser</remarks>
         /// <returns></returns>
         IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses);
+        Task ActivateAsync(params string[] addresses);
 
         uint GetAddressRank(string address);
 

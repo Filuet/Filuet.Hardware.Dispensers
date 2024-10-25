@@ -43,14 +43,14 @@ namespace PoC
                                 Alias = "Machine 1",
                                 PortNumber = 5050,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
-                                IpOrSerialAddress = "172.16.7.103",//"COM9",// 
+                                IpOrSerialAddress = "COM9",// "172.16.7.104",//
                                 LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
                                 PollFrequencyHz = 0.33m,
-                                MaxExtractWeightPerTime = 5000
+                                MaxExtractWeightPerTime = 1200
                             };
 
-                            ICommunicationChannel channel1 = //new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
-                            new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
+                            ICommunicationChannel channel1 = new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
+                           // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
 
                             VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(channel1, settings1, address => planogram.GetProduct(address).Weight));
                             result.Add(machine1);

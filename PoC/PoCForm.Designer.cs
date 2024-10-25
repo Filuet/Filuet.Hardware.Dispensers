@@ -59,6 +59,7 @@ namespace PoC
             savePlanogramButton = new System.Windows.Forms.Button();
             contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(components);
             pingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            activateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             tabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             tabControl2.SuspendLayout();
@@ -381,16 +382,23 @@ namespace PoC
             // 
             // contextMenuStrip1
             // 
-            contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { pingToolStripMenuItem });
+            contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { pingToolStripMenuItem, activateToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new System.Drawing.Size(99, 26);
+            contextMenuStrip1.Size = new System.Drawing.Size(118, 48);
             // 
             // pingToolStripMenuItem
             // 
             pingToolStripMenuItem.Name = "pingToolStripMenuItem";
-            pingToolStripMenuItem.Size = new System.Drawing.Size(98, 22);
+            pingToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
             pingToolStripMenuItem.Text = "Ping";
             pingToolStripMenuItem.Click += pingToolStripMenuItem_Click;
+            // 
+            // activateToolStripMenuItem
+            // 
+            activateToolStripMenuItem.Name = "activateToolStripMenuItem";
+            activateToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
+            activateToolStripMenuItem.Text = "Activate";
+            activateToolStripMenuItem.Click += activateToolStripMenuItem_Click;
             // 
             // PoCForm
             // 
@@ -447,5 +455,6 @@ namespace PoC
         private System.Windows.Forms.TreeView planogramTreeView;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem pingToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem activateToolStripMenuItem;
     }
 }

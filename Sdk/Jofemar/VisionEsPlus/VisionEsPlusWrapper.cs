@@ -68,6 +68,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             }
         }
 
+        public async Task ActivateAsync(params string[] addresses) {
+            foreach (string address in addresses) {
+                Thread.Sleep(100);
+                await _machineAdapter.ActivateBeltAsync(Id, address);
+            }
+        }
+
         public uint GetAddressRank(string address)
         {
             string[] mtb = address.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
