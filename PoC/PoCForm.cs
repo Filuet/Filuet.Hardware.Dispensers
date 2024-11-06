@@ -190,7 +190,7 @@ namespace PoC
         private void retestButton_Click(object sender, EventArgs e)
         {
             retestButton.Enabled = false;
-            _dispenser.Test().ContinueWith(x => Invoke(new MethodInvoker(delegate ()
+            _dispenser.TestAsync().ContinueWith(x => Invoke(new MethodInvoker(delegate ()
             {
                 retestButton.Enabled = true;
             })));

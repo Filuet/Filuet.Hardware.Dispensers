@@ -50,16 +50,12 @@ namespace Filuet.Hardware.Dispensers.Core
             _chainBuilder = chainBuilder;
             _planogram = planogram;
 
-            Test();
+            TestAsync().ConfigureAwait(false);
         }
 
         public async Task Dispense(params (string productUid, ushort quantity)[] items) {
-            List<string> routesToPing = new List<string>();
-            foreach (var i in items)
-                routesToPing.AddRange(_planogram[i.productUid]?.Addresses);
-
             try {
-                await Test(); // update status of dispenser
+                await TestAsync();
 
                 IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address => {
                     PoGRoute route = _planogram.GetRoute(address);
@@ -69,7 +65,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
 
                 foreach (var dispenser in dispensers) {
-                    await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+                    await dispenser.DispenseAsync(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
                 }
             }
             catch (InvalidOperationException ex) {
@@ -86,10 +82,15 @@ namespace Filuet.Hardware.Dispensers.Core
             });
         }
 
-        public async Task Test() => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray());
+        /// <summary>
+        /// Update status of dispensers
+        /// </summary>
+        /// <returns></returns>
+        public async Task TestAsync()
+            => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray());
 
         private async Task PingRoutes()
-            => await Task.WhenAll(_dispensers.Select(x => x.Test()).ToArray())
+            => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray())
                 .ContinueWith(x => {
                     Parallel.ForEach(_dispensers, d => {
                         var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();

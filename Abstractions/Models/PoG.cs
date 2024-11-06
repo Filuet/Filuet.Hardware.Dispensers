@@ -13,6 +13,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class PoG
     {
+        public const int DEFAULT_PRODUCT_WEIGHT_GR = 500;
+
         public PoGProduct this[string productUid] => Products.FirstOrDefault(x => string.Equals(x.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase));
 
         public PoGRoute GetRoute(string address)
@@ -116,6 +118,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                         break;
                     }
         }
+
+        /// <summary>
+        /// Get product weight in gramms
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public int GetProductWeight(string productUid) =>
+            this[productUid]?.Weight ?? DEFAULT_PRODUCT_WEIGHT_GR;
 
         public string ToString(bool writeIndented = true) {
             JsonSerializerOptions options = new JsonSerializerOptions();

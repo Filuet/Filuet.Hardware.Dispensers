@@ -1,5 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Enums;
+using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using System;
 using System.Collections.Generic;
@@ -36,9 +37,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(this, e);
         }
 
-        public async Task Test()
+        public async Task TestAsync()
         {
-            (DispenserStateSeverity severity, VisionEsPlusResponseCodes origin, string message)? testResult = await _machineAdapter.Status();
+            (DispenserStateSeverity severity, VisionEsPlusResponseCodes origin, string message)? testResult = await _machineAdapter.StatusAsync();
 
             if (testResult.HasValue)
             {
@@ -47,17 +48,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             }
         }
 
-        // There is no use to dispense one by one
-        public async Task Dispense(string address, uint quantity)
-            => await _machineAdapter.MultiplyDispensing(address, quantity);
-
         /// <summary>
         /// Be sure that common weight of the products to be dispensed must be less than weight threshold of the elevator
         /// </summary>
         /// <param name="map"></param>
-        /// <returns></returns>
-        public async Task MultiplyDispensing(IDictionary<string, uint> map)
-            => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
+        /// <returns>Extracted items</returns>
+        public async Task<IEnumerable<CartItem>> DispenseAsync(Cart cart)
+            => await _machineAdapter.DispenseAsync(cart);
 
         public IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses)
         {
@@ -86,7 +83,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             while (state == null || state.Value.state == DispenserStateSeverity.Inoperable)
             {
                 Thread.Sleep(3000);
-                state = await _machineAdapter.Status();
+                state = await _machineAdapter.StatusAsync();
             }
             onReset?.Invoke(this, null);
         }

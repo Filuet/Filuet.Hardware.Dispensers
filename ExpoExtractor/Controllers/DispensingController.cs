@@ -67,7 +67,7 @@ namespace ExpoExtractor.Controllers
         [HttpGet("test")]
         public async Task<IEnumerable<MachineTestResult>> Test() {
             _message = new List<MachineTestResult>();
-            await _vendingMachine.Test();
+            await _vendingMachine.TestAsync();
 
             return _message.OrderBy(x => x.Machine);
         }

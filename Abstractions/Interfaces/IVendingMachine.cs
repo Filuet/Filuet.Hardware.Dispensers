@@ -22,6 +22,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         Task Dispense(params (string productUid, ushort quantity)[] items);
         void Unlock(params uint[] machines);
-        Task Test();
+        Task TestAsync();
     }
 }

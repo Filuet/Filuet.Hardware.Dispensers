@@ -18,24 +18,32 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
     public class VisionEsPlus
     {
         public event EventHandler<bool> onLightsChanged;
+        /// <summary>
+        /// start dispense
+        /// </summary>
         public event EventHandler<DispenseEventArgs> onDispensing;
+        /// <summary>
+        /// product dispensed
+        /// </summary>
         public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
         /// <summary>
         /// Fires when the customer forget to pick up the products
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
-
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
         /// 'true' means command, 'false' means response
         /// </summary>
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
-        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<string, int> getWeightByAddress = null)
-        {
+        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, PoG planogram) {
             _settings = settings;
-            _getWeightByAddress = getWeightByAddress;
+
+            if (planogram == null)
+                throw new ArgumentNullException("Planogram is mandatory");
+            else _planogram = planogram;
+
             byte machineAddress = (byte)(byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
             _commandBody = new byte[] { 0x02 /* start of the message */, 0x30 /* Filler1 */, 0x30 /* Filler2 */,
                 machineAddress /* Machine address (1-31) 0x81*/, 0 /* Type */, 0xff /* Param1 */, 0xff /* Param2 */, 0 /* CheckSum1 */, 0  /* CheckSum1 */, 0x03  /* End of message */ };
@@ -57,12 +65,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         internal void Unlock()
             => ExecuteCommand(UnlockTheDoor(), "Unlock");
 
-        internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> Status()
+        internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> StatusAsync()
             => await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
-                ExecuteCommand(StatusCommand(), "Status", (response, code) =>
-                {
-                    switch (code)
-                    {
+                ExecuteCommand(StatusCommand(), "Status", (response, code) => {
+                    switch (code) {
                         case VisionEsPlusResponseCodes.Unknown:
                             return (DispenserStateSeverity.Inoperable, code, "inoperable");
                         case VisionEsPlusResponseCodes.Ok:
@@ -70,8 +76,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         case VisionEsPlusResponseCodes.FaultIn485Bus:
                             return (DispenserStateSeverity.Normal, code, "connected");
                         default:
-                            switch (TryGetDoorState(response))
-                            {
+                            switch (TryGetDoorState(response)) {
                                 case DoorState.DoorClosed:
                                     return (DispenserStateSeverity.Normal, code, "the door was closed");
                                 case DoorState.DoorOpen:
@@ -83,20 +88,30 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     }
                 }));
 
-        internal async Task MultiplyDispensing(EspBeltAddress address, uint quantity)
-        {
-            Dictionary<EspBeltAddress, uint> map = new Dictionary<EspBeltAddress, uint>();
-            map.Add(address, quantity);
-
-            await MultiplyDispensing(map);
-        }
-
-        internal async Task MultiplyDispensing(IDictionary<EspBeltAddress, uint> map)
-        {
-            (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await Status();
+        internal async Task<IEnumerable<CartItem>> DispenseAsync(Cart cart) {
+            (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await StatusAsync();
 
             if (state?.state != DispenserStateSeverity.Normal)
-                return;
+                return null;
+
+            List<CartItem> result = new List<CartItem>(); // extracted products (with fact quantity)
+            Action<string> appendToDispensed = productUid => {
+                CartItem item = result.FirstOrDefault(x=>x.ProductUid == productUid);
+                if (item == null) {
+                    item = new CartItem { ProductUid = productUid, Quantity = 1 };
+                    result.Add(item);
+                }
+                else item.Quantity++;
+            };
+
+            // all active routes of the current machine according to the planogram with the cart products
+            Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid))
+                .Select(x => new KeyValuePair<string, IEnumerable<PoGRoute>>(x.ProductUid, x.Routes.Where(x => (x.Active ?? true) && x.Dispenser.Alias == _settings.Alias)))
+                .ToDictionary(x => x.Key, x => x.Value.Select(y=> new RouteBalance { Address = y.Address, Quantity = y.Quantity }));
+            // get all the products from the cart that could be extracted from this machine 
+            IEnumerable<string> products = prodRoutes.Select(x => x.Key);
+            // prepare cart items to dispense from the machine
+            IEnumerable<CartItem> items = cart.Items.Where(i => products.Contains(i.ProductUid));
 
             ChangeLight(true); // Turn on lights before dispensing 
 
@@ -104,56 +119,55 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             int addedWeight = 0; // #5122
 
-            foreach (var a in map)
-            {
-                int productWeight = _getWeightByAddress?.Invoke(a.Key.ToString()) ?? VisionEsPlusSettings.DEFAULT_PRODUCT_WEIGHT_GR;
+            foreach (var item in items) {
+                int productWeight = _planogram.GetProductWeight(item.ProductUid);
+                var routesForItem = prodRoutes[item.ProductUid].OrderByDescending(x => x.Quantity).ToList();
 
-                for (uint i = 1; i <= a.Value; i++)
-                {
+                for (uint i = 1; i <= item.Quantity; i++) {
                     state = null;
-
                     addedWeight += productWeight;
 
-                    bool isTheVeryLastProduct = a.Key == map.Last().Key && i == a.Value;
+                    bool isTheVeryLastProduct = item.ProductUid == items.Last().ProductUid && i == item.Quantity;
                     bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime <= addedWeight;
                     bool sendVEND = isMaxWeightThresholdReached || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
-                    onDispensing?.Invoke(this, DispenseEventArgs.Create(a.Key));
-                    Dispense(a.Key, sendVEND);
+                    // find the most populated address
+                    var route = routesForItem.OrderByDescending(x => x.Quantity).FirstOrDefault(x => x.Quantity > 0);
+                    if (route == null) // no more routes to extract from. Let's dispense the next product
+                        break;
+
+                    onDispensing?.Invoke(this, DispenseEventArgs.Create(route.Address)); // notify about dispensing product started
+                    Dispense(route.Address, sendVEND);
 
                     if (sendVEND)
                         addedWeight = 0; // flush elevator used weight
 
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
-                    while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30)
-                    {
-                        try
-                        {
+                    while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30) {
+                        try {
                             Thread.Sleep(3000);
-                            state = await Status(); // Wait for the next not empty state
+                            state = await StatusAsync(); // Wait for the next not empty state
                         }
-                        catch (SocketException)
-                        { }
-                        catch (Exception ex)
-                        { }
+                        catch (SocketException) { }
+                        catch (Exception ex) { }
                     }
                     sw.Stop();
 
-                    switch (state?.state)
-                    {
+                    switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
-                            droppedIntoTheElevatorProducts.Add(DispenseEventArgs.Create(a.Key));
+                            droppedIntoTheElevatorProducts.Add(DispenseEventArgs.Create(route.Address));
+                            route.Quantity--;
+                            appendToDispensed(item.ProductUid); // product dispensed
 
                             state = null;
-                            state = await Status(); // Check if the machine ready to handle next command
+                            state = await StatusAsync(); // Check if the machine ready to handle next command
 
                             if (state?.state != DispenserStateSeverity.Normal) // The machine is in error state
                             {
-                                switch (state?.internalState)
-                                {
+                                switch (state?.internalState) {
                                     case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
-                                        onWaitingProductsToBeRemoved?.Invoke(this, DispenseEventArgs.Create(a.Key));
+                                        onWaitingProductsToBeRemoved?.Invoke(this, DispenseEventArgs.Create(route.Address));
                                         state = null;
 
                                         Stopwatch sw1 = new Stopwatch();
@@ -161,37 +175,30 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                                         while ((state == null ||
                                             state.Value.state == DispenserStateSeverity.Inoperable ||
-                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 120)
-                                        {
-                                            try
-                                            {
+                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 120) {
+                                            try {
                                                 Thread.Sleep(3000);
-                                                state = await Status(); // Wait for the next not empty state 
+                                                state = await StatusAsync(); // Wait for the next not empty state 
                                             }
-                                            catch (SocketException)
-                                            { }
-                                            catch (Exception ex)
-                                            { }
+                                            catch (SocketException) { }
+                                            catch (Exception ex) { }
                                         }
                                         sw1.Stop();
 
-                                        if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus) // The product/s was/were given
-                                        {
+                                        if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus) { // The product/s was/were given
                                             foreach (var p in droppedIntoTheElevatorProducts)
                                                 onDispensed?.Invoke(this, p);
 
                                             droppedIntoTheElevatorProducts.Clear(); // Consider the products as dispensed
                                         }
-                                        else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved)
-                                        {
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) {
                                             // Looks like the customer has forgotten to pick up the products. At least they're in the elevator so far
                                             foreach (var p in droppedIntoTheElevatorProducts)
                                                 onAbandonment?.Invoke(this, p);
 
                                             droppedIntoTheElevatorProducts.Clear(); // Consider the products as disputable, but as for now forget them
                                         }
-                                        else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector)
-                                        {
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector) {
                                             // This could happen when during the descent the product fell and stopped blocking the detector or, conversely, turned over and blocked it.
                                             // This doesn't mean that the product wasn't issued
                                         }
@@ -206,19 +213,21 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         default:
                             break;
                     }
+
                 }
             }
 
             // Turn off lights after dispensing
             if (!_settings.LightSettings.LightsAreNormallyOn)
                 ChangeLight(false);
+
+            return result;
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
             => ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
 
-        internal bool? IsBeltActive(uint machineId, string route)
-        {
+        internal bool? IsBeltActive(uint machineId, string route) {
             EspBeltAddress address = route;
 
             if (address.Machine != machineId) // The route belongs to another machine
@@ -234,8 +243,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Turn on/off the light
         /// </summary>
         /// <returns>команда</returns>
-        private byte[] ChangeLightCommand(bool isOn)
-        {
+        private byte[] ChangeLightCommand(bool isOn) {
             var comm = new byte[_commandBody.Length];
             Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x4c;
@@ -250,8 +258,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Get status of dispensing machine
         /// </summary>
         /// <returns>команда</returns>
-        private byte[] StatusCommand()
-        {
+        private byte[] StatusCommand() {
             var comm = new byte[_commandBody.Length];
             Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x53;
@@ -263,8 +270,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Get status of dispensing machine
         /// </summary>
         /// <returns>команда</returns>
-        private byte[] CheckChannelCommand(int tray, int belt)
-        {
+        private byte[] CheckChannelCommand(int tray, int belt) {
             var comm = new byte[_commandBody.Length];
             Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x43;
@@ -280,8 +286,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <param name="tray"></param>
         /// <param name="belt"></param>
         /// <returns></returns>
-        private byte[] DispenseCommand(int tray, int belt, bool lastItem)
-        {
+        private byte[] DispenseCommand(int tray, int belt, bool lastItem) {
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = (byte)(lastItem ? 0x56 : 0x4D); // Vend command : Multiply dispense command
@@ -295,8 +300,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Parks the lift is anything to extract
         /// </summary>
         /// <returns></returns>
-        private byte[] ParkingCommand()
-        {
+        private byte[] ParkingCommand() {
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x4d;
@@ -310,8 +314,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Resets the machine
         /// </summary>
         /// <returns></returns>
-        private byte[] ResetCommand()
-        {
+        private byte[] ResetCommand() {
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x52;
@@ -323,8 +326,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Unlock the elevator door
         /// </summary>
         /// <returns></returns>
-        private byte[] UnlockTheDoor()
-        {
+        private byte[] UnlockTheDoor() {
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x4E;
@@ -334,8 +336,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         #endregion
 
         #region Private
-        private DoorState TryGetDoorState(byte[] arr)
-        {
+        private DoorState TryGetDoorState(byte[] arr) {
             if (arr == null || arr.Length != 7 || arr[2] != 0x50)
                 return DoorState.Unknown;
 
@@ -347,8 +348,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Вставляет во второй и третий с конца байты контрольную сумму в соответствии с протоколом
         /// </summary>
         /// <param name="message">сообщение</param>
-        private void InjectCheckSumm(IList<byte> message)
-        {
+        private void InjectCheckSumm(IList<byte> message) {
             var summ = 0;
             for (var i = 0; i < message.Count - 3; i++)
                 summ += message[i];
@@ -365,14 +365,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             => response == null || (response != null && (response.Count > 10 || response.Count == 0)) ?
                 VisionEsPlusResponseCodes.Unknown : (VisionEsPlusResponseCodes)response[response.Count - 1];
 
-        private void ExecuteCommand(byte[] command, string message, Action<VisionEsPlusResponseCodes> postAction = null)
-        {
-            lock (_channel)
-            {
+        private void ExecuteCommand(byte[] command, string message, Action<VisionEsPlusResponseCodes> postAction = null) {
+            lock (_channel) {
                 byte[] response = null;
 
-                try
-                {
+                try {
                     onDataMoving?.Invoke(this, (true, $"{message} {_settings.ID}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
@@ -386,14 +383,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             }
         }
 
-        private T ExecuteCommand<T>(byte[] command, string message, Func<byte[], VisionEsPlusResponseCodes, T> postAction)
-        {
-            lock (_channel)
-            {
+        private T ExecuteCommand<T>(byte[] command, string message, Func<byte[], VisionEsPlusResponseCodes, T> postAction) {
+            lock (_channel) {
                 byte[] response = null;
 
-                try
-                {
+                try {
                     onDataMoving?.Invoke(this, (true, $"{message} {_settings.ID}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
@@ -412,8 +406,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         internal string Alias => _settings.Alias;
 
+        private readonly PoG _planogram;
         private readonly VisionEsPlusSettings _settings;
-        private readonly Func<string, int> _getWeightByAddress;
         private readonly byte[] _commandBody;
         private ICommunicationChannel _channel;
     }

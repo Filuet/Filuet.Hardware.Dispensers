@@ -4,8 +4,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusSettings
     {
-        public const int DEFAULT_PRODUCT_WEIGHT_GR = 3500;
-
         public string Alias { get; set; }
         /// <summary>
         /// TCP: Ip address; Serial: 0x01 by default (all machines have 0x01 address cause we're separating them by serial ports)

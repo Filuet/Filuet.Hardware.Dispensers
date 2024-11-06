@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -15,21 +16,14 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
         event EventHandler<DispenserTestEventArgs> onTest;
         event EventHandler onReset;
-
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
         string Alias { get; }
-
         uint Id { get; }
-
         bool IsAvailable { get; }
 
-        Task Test();
-
-        Task Dispense(string address, uint quantity);
-
-        Task MultiplyDispensing(IDictionary<string, uint> map);
-
+        Task TestAsync();
+        Task<IEnumerable<CartItem>> DispenseAsync(Cart cart);
         /// <summary>
         /// True means that the address is available
         /// </summary>
@@ -37,11 +31,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <remarks>if isActive is null than the address doesn't belong to the dispenser</remarks>
         /// <returns></returns>
         IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses);
-
         uint GetAddressRank(string address);
-
         Task Reset();
-
         /// <summary>
         /// Open door or something
         /// </summary>
