@@ -52,7 +52,7 @@ namespace PoC
                             ICommunicationChannel channel1 = new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
                            // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
 
-                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(channel1, settings1, planogram));
+                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(1, channel1, settings1, () => sp.GetService<PoG>()));
                             result.Add(machine1);
                             integratedEmitters.Add(machine1);
                             #endregion
@@ -70,7 +70,7 @@ namespace PoC
 
                             ICommunicationChannel channel2 = new EspSerialChannel(s => { s.PortName = settings2.IpOrSerialAddress; }); // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpOrSerialAddress), settings2.PortNumber); });
 
-                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(channel2, settings2, planogram));
+                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(2, channel2, settings2, () => sp.GetService<PoG>()));
                             result.Add(machine2);
                             integratedEmitters.Add(machine2);
                             #endregion

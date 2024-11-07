@@ -41,7 +41,7 @@ builder.Services.AddSingleton(planogram)
                     else
                         channel = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(curSettings.IpOrSerialAddress), curSettings.PortNumber); });
 
-                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper((uint)++id, new VisionEsPlus(channel, curSettings, planogram));
+                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper((uint)++id, new VisionEsPlus(id, channel, curSettings, () => sp.GetService<PoG>()));
                     result.Add(machine);
                     integratedEmitters.Add(machine);
                 }

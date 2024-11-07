@@ -3,6 +3,10 @@
     public class CartItem
     {
         public string ProductUid { get; set; }
-        public uint Quantity { get; set; }
+        public int Quantity { get; set; }
+
+        public void Decrease() {
+            Quantity = Quantity - 1;
+        }
     }
 }

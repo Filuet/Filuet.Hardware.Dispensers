@@ -25,7 +25,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         bool IsAvailable { get; }
 
         Task TestAsync();
-        Task<IEnumerable<CartItem>> DispenseAsync(Cart cart);
+        Task<Cart> DispenseAsync(Cart cart);
         /// <summary>
         /// True means that the address is available
         /// </summary>

@@ -5,17 +5,26 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     /// <summary>
     /// Planogram
     /// </summary>
-    public class PoG
-    {
+    public class PoG {
         public const int DEFAULT_PRODUCT_WEIGHT_GR = 500;
 
-        public PoGProduct this[string productUid] => Products.FirstOrDefault(x => string.Equals(x.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase));
+        public PoGProduct this[string productOrAddress] {
+            get
+            {
+                Regex regex = new Regex("^[\\d]{1}/[\\d]{2}/[\\d]{1}$");
+                if (regex.Match(productOrAddress).Success)
+                    return Products.FirstOrDefault(x => x.Routes.Any(r => r.Address == productOrAddress));
+
+                return Products.FirstOrDefault(x => string.Equals(x.ProductUid, productOrAddress, StringComparison.InvariantCultureIgnoreCase));
+            }
+        }
 
         public PoGRoute GetRoute(string address)
             => Products.SelectMany(x => x.Routes).FirstOrDefault(x => address == x.Address);
@@ -175,6 +184,12 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         [JsonIgnore]
         public IDispenser Dispenser { get; set; }
+
+        /// <summary>
+        /// Crutch
+        /// </summary>
+        /// <returns></returns>
+        public uint DispenserId => uint.Parse(Address.Substring(0, Address.IndexOf('/')));
 
         public override string ToString() => $"{Address}: {Quantity}";
     }

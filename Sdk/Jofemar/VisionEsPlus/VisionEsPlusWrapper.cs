@@ -56,7 +56,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         /// <param name="map"></param>
         /// <returns>Extracted items</returns>
-        public async Task<IEnumerable<CartItem>> DispenseAsync(Cart cart)
+        public async Task<Cart> DispenseAsync(Cart cart)
             => await _machineAdapter.DispenseAsync(cart);
 
         public IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses)

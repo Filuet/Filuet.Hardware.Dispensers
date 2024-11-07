@@ -46,6 +46,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     _planogram.SetAttributes(e.address, d, false);
                     if (e.emptyBelt)
                         _planogram.GetRoute(e.address).Quantity = 0;
+                    else _planogram.GetRoute(e.address).Active = false;
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
                 };
@@ -66,16 +67,17 @@ namespace Filuet.Hardware.Dispensers.Core
                 // leave only active dispensers
                 IEnumerable<IDispenser> dispensers = _dispensers.Where(x => x.IsAvailable);
 
-                // sort dispensers from most loaded to the less loaded taking into account products from the cart
-                List<uint> dispensersOrder = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid)).SelectMany(x => x.Routes)
-                    .Where(x => dispensers.Any(d => d.Id == x.Dispenser.Id))
-                    .GroupBy(x => x.Dispenser.Id).Select(group => new { group.Key, Qty = group.ToList().Sum(x => x.Quantity) })
-                    .OrderByDescending(x => x.Qty).Select(x => x.Key).ToList();
-                
-                foreach (var dispenserId in dispensersOrder) {
-                    IDispenser dispenser = dispensers.First(x => x.Id == dispenserId);
-                    IEnumerable<CartItem> items = await dispenser.DispenseAsync(cart);
-                    cart.RemoveDispensed(items); // remove dispensed and go to the next dispenser
+                List<(IDispenser dispenser, int qty)> dispenserRank = new List<(IDispenser, int)>();
+
+                foreach (var d in dispensers) {
+                    IEnumerable<PoGRoute> candidates = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid)).SelectMany(x => x.Routes).Where(x => d.Id == x.DispenserId);
+                    int qty = candidates.Sum(x => x.Quantity);
+                    if (qty > 0)
+                        dispenserRank.Add((d, qty));
+                }
+
+                foreach (var x in dispenserRank.OrderByDescending(x=>x.qty)) {
+                    cart = await x.dispenser.DispenseAsync(cart);
                 }
             }
             catch (InvalidOperationException ex) {

@@ -5,6 +5,8 @@
     /// </summary>
     public class RouteBalance
     {
+        public string Product { get; set; }
+
         public string Address { get; set; }
 
         public ushort Quantity { get; set; }

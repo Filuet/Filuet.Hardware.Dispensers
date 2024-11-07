@@ -1,1 +1,1 @@
-[{"product":"0003","routes":[{"r":"2/14/3","q":0,"m":50,"a":1},{"r":"2/14/8","q":38,"m":50,"a":1}],"weight":800},{"product":"0004","routes":[{"r":"1/13/7","q":50,"m":50,"a":1}],"weight":1000}]
+[{"product":"0003","routes":[{"r":"2/14/1","q":2,"m":5,"a":0,"DispenserId":2},{"r":"2/14/8","q":2,"m":5,"a":0,"DispenserId":2},{"r":"2/16/1","q":2,"m":5,"a":0,"DispenserId":2}],"weight":800},{"product":"0004","routes":[{"r":"2/14/0","q":2,"m":5,"a":1,"DispenserId":2}],"weight":1000}]
