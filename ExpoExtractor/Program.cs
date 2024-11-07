@@ -81,7 +81,10 @@ builder.Services.AddSingleton(planogram)
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) => {
             PoG planogram = sp.GetRequiredService<PoG>();
-            planogram.GetRoute(e.address).Quantity--;
+            
+            foreach (var a in e)
+                planogram.GetRoute(a.address).Quantity--;
+
             planogram.Write("test_planogram.json");
 
             StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" };
@@ -89,6 +92,7 @@ builder.Services.AddSingleton(planogram)
         };
 
         vendingMachine.onPlanogramClarification += (sender, e) => {
+            e.Planogram.Write("test_planogram.json");
             //form.Planogram = e.Planogram;
             //form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");
         };

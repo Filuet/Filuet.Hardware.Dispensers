@@ -22,7 +22,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
+        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
 
         public VisionEsPlusWrapper(uint id, VisionEsPlus machineAdapter)
         {
@@ -33,8 +35,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.onDispensing += (sender, e) => onDispensing?.Invoke(this, e);
             _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
             _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
-            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
             _machineAdapter.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(this, e);
+            _machineAdapter.onFailedToDispense += (sender, e) => onFailedToDispense?.Invoke(this, e);
+            _machineAdapter.onAddressUnavailable += (sender, e) => onAddressUnavailable?.Invoke(this, e);
         }
 
         public async Task TestAsync()
@@ -62,6 +65,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             {
                 Thread.Sleep(100);
                 yield return (address, IsAvailable ? _machineAdapter.IsBeltActive(Id, address) : false);
+            }
+        }
+
+        public async Task ActivateAsync(params string[] addresses) {
+            foreach (string address in addresses) {
+                Thread.Sleep(100);
+                await _machineAdapter.ActivateBeltAsync(Id, address);
             }
         }
 

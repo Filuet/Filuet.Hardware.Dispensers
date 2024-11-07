@@ -1,5 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
@@ -19,7 +20,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
         event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
 
         Task DispenseAsync(Cart cart);
         void Unlock(params uint[] machines);

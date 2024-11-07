@@ -31,6 +31,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication
             }
 
             _port.Write(data, 0, data.Length);
+
             List<byte> bytes = new List<byte>();
 
             for (int i = 0; i < _settings.ReceiveTimeout.TotalMilliseconds / _settings.ReadDelay.TotalMilliseconds; i++)
@@ -42,9 +43,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication
                 if (block.Length == 0)
                     break;
             }
-
-            if (_port.IsOpen)
-                _port.Close();
 
             return bytes.ToArray();
         }

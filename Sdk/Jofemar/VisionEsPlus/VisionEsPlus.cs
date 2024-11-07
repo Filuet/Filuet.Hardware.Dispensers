@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,11 +27,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// product dispensed
         /// </summary>
         public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         /// <summary>
         /// Fires when the customer forget to pick up the products
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
+        public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
+        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
+
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
         /// 'true' means command, 'false' means response
@@ -126,6 +130,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 for (uint i = 1; i <= item.Quantity; i++) {
                     state = null;
                     addedWeight += productWeight;
+                    // if there's the same product to dispense next then take current weight, otherwise take weight of the next product
+                    int nextItemWeight = i + 1 <= a.Value ? productWeight : nextProductWeight; 
 
                     bool isTheVeryLastProduct = item.ProductUid == items.Last().ProductUid && i == item.Quantity;
                     bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime <= addedWeight;
@@ -142,17 +148,36 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     if (sendVEND)
                         addedWeight = 0; // flush elevator used weight
 
+                    bool productDispensed = true;
+
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
                     while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30) {
                         try {
                             Thread.Sleep(3000);
-                            state = await StatusAsync(); // Wait for the next not empty state
+                            state = await Status(); // Wait for the next not empty state
+                            if (state.HasValue) {
+                                if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
+                                    productDispensed = false;
+                                    onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = a.Key.ToString(), emptyBelt = true });
+                                    continue;
+                                }
+                            }
                         }
                         catch (SocketException) { }
                         catch (Exception ex) { }
                     }
                     sw.Stop();
+
+                    // A dispensing issue occured.
+                    if (!productDispensed) {
+                        int notGivenQty = (int)(a.Value - i + 1);
+                        if (!addressesNotIssued.ContainsKey(a.Key))
+                            addressesNotIssued.Add(a.Key, notGivenQty);
+                        else addressesNotIssued[a.Key] += notGivenQty;
+
+                        break;
+                    }
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
@@ -167,7 +192,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                             {
                                 switch (state?.internalState) {
                                     case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
-                                        onWaitingProductsToBeRemoved?.Invoke(this, DispenseEventArgs.Create(route.Address));
+                                        addedWeight = 0; // let's drop the value JIC. Because the machine can park the elevator without VEND command. For example, the sensor was blocked by a volumetric product 
+
+                                        onWaitingProductsToBeRemoved?.Invoke(this, droppedIntoTheElevatorProducts);
                                         state = null;
 
                                         Stopwatch sw1 = new Stopwatch();
@@ -234,7 +261,17 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 return null;
 
             return ExecuteCommand(CheckChannelCommand(address.Tray, address.Belt), "CheckBelt", (response, code) =>
-                response.Length == 8 && response[4] == 0x43); // 0x44 means bealt is unavailable
+                response.Length == 8 && (response[4] == 0x43 || response[4] == 0x41)); // 0x44 means bealt is unavailable
+        }
+
+        internal async Task<bool> ActivateBeltAsync(uint machineId, string route) {
+            EspBeltAddress address = route;
+
+            if (address.Machine != machineId) // The route belongs to another machine
+                return false;
+
+            return ExecuteCommand(ActivateBeltCommand(address.Tray, address.Belt), "ActivateBelt", (response, code) =>
+                response.Length == 8 && response[4] == 0x43); // 0x44 means bealt is unavailable}
         }
         #endregion
 
@@ -275,6 +312,16 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             Array.Copy(_commandBody, comm, _commandBody.Length);
             comm[4] = 0x43;
             comm[5] = 0x43;
+            comm[6] = (byte)(tray * 10 + belt);
+            InjectCheckSumm(comm);
+            return comm;
+        }
+
+        private byte[] ActivateBeltCommand(int tray, int belt) {
+            var comm = new byte[_commandBody.Length];
+            Array.Copy(_commandBody, comm, _commandBody.Length);
+            comm[4] = 0x52;
+            comm[5] = 0x80;
             comm[6] = (byte)(tray * 10 + belt);
             InjectCheckSumm(comm);
             return comm;

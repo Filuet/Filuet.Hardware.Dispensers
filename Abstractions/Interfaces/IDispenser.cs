@@ -13,9 +13,12 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onDispensing;
         event EventHandler<DispenseEventArgs> onDispensed;
         event EventHandler<DispenseEventArgs> onAbandonment;
-        event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         event EventHandler<DispenserTestEventArgs> onTest;
+        event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
         event EventHandler onReset;
+        event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
+
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
         string Alias { get; }
@@ -31,6 +34,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <remarks>if isActive is null than the address doesn't belong to the dispenser</remarks>
         /// <returns></returns>
         IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses);
+        Task ActivateAsync(params string[] addresses);
+
         uint GetAddressRank(string address);
         Task Reset();
         /// <summary>

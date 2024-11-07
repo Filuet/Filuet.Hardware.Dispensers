@@ -29,7 +29,7 @@ namespace ExpoExtractor.Controllers
 
         [HttpPost("extract")]
         public async Task Extract(IEnumerable<ExtractSlot> toDispense)
-            => await _vendingMachine.Dispense(toDispense.Select(x => (x.Sku, (ushort)x.Quantity)).ToArray());
+            => await _vendingMachine.Dispense(true, toDispense.Select(x => (x.Sku, (ushort)x.Quantity)).ToArray());
 
         [HttpGet("status")]
         public IActionResult Status() {

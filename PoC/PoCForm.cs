@@ -25,28 +25,24 @@ namespace PoC
             }
         }
 
-        public PoCForm()
-        {
+        public PoCForm() {
             InitializeComponent();
 
             planogramTreeView.NodeMouseClick += (sender, args) => planogramTreeView.SelectedNode = args.Node;
         }
 
-        public void Initialize(PoG planogram, IVendingMachine dispenser)
-        {
+        public void Initialize(PoG planogram, IVendingMachine dispenser) {
             _planogram = planogram;
             _dispenser = dispenser;
 
-            _dispenser.onTest += (sender, e) =>
-            {
+            _dispenser.onTest += (sender, e) => {
                 MachineIdIsAvailable[e.Dispenser.Id] = e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Normal;
 
                 Invoke(new MethodInvoker(delegate ()
                 {
                     dispensersListBox.Items.Clear();
 
-                    foreach (var d in _factDispenser._dispensers)
-                    {
+                    foreach (var d in _factDispenser._dispensers) {
                         if (MachineIdIsAvailable.ContainsKey(d.Id))
                             dispensersListBox.Items.Add(d);
 
@@ -56,8 +52,7 @@ namespace PoC
                 }));
             };
 
-            _dispenser.onDataMoving += (sender, e) =>
-            {
+            _dispenser.onDataMoving += (sender, e) => {
                 Invoke(new MethodInvoker(delegate ()
                 {
                     telemetryTextBox.Text = $"{DateTime.Now:HH:mm:ss.fff} {(e.direction ? "→" : "←")} {e.data} [{e.message}] {Environment.NewLine}{telemetryTextBox.Text}";
@@ -72,8 +67,7 @@ namespace PoC
 
             PopulatePlanogramTreeView();
 
-            Task.Factory.StartNew(() =>
-            {
+            Task.Factory.StartNew(() => {
                 Thread.Sleep(5000);
                 Invoke(new MethodInvoker(delegate ()
                 {
@@ -82,43 +76,39 @@ namespace PoC
             });
         }
 
-        private void PopulatePlanogramTreeView()
-        {
+        private void PopulatePlanogramTreeView() {
             planogramTreeView.Nodes.Clear();
 
-            foreach (var p in _planogram.Products)
-            {
+            foreach (var p in _planogram.Products) {
                 TreeNode product = new TreeNode(p.ProductUid) { Tag = p };
                 planogramTreeView.Nodes.Add(product);
-                foreach (var a in p.Routes)
-                {
-                    product.Nodes.Add(new TreeNode($"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}") {  Tag = a });
+                foreach (var a in p.Routes) {
+                    product.Nodes.Add(new TreeNode($"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}") { Tag = a });
                 }
             }
         }
 
-        private void _dispenser_onPlanogramClarification(object sender, PlanogramEventArgs e)
-        {
+        private void _dispenser_onPlanogramClarification(object sender, PlanogramEventArgs e) {
             throw new NotImplementedException();
         }
 
-        private void dispenseButton_Click(object sender, EventArgs e)
-        {
-            _dispenser.Dispense(ToDispense.Select(x => (x.Product.ProductUid, x.Qty)).ToArray());
+        private void dispenseButton_Click(object sender, EventArgs e) {
+            if (ToDispense == null || !ToDispense.Any()) {
+                MessageBox.Show("Add some products first", "No products provided", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            _dispenser.Dispense(true, ToDispense.Select(x => (x.Product.ProductUid, x.Qty)).ToArray());
         }
 
-        private void addSkuButton_Click(object sender, EventArgs e)
-        {
+        private void addSkuButton_Click(object sender, EventArgs e) {
             PoGProduct product = skuComboBox.SelectedItem as PoGProduct;
             ushort qty = (ushort)qtyNumericUpDown.Value;
 
             bool alreadyExists = false;
 
-            for (int i = 0; i < dispenseListBox.Items.Count; i++)
-            {
+            for (int i = 0; i < dispenseListBox.Items.Count; i++) {
                 ItemToDispense i2d = dispenseListBox.Items[i] as ItemToDispense;
-                if (i2d.Product.ProductUid == product.ProductUid)
-                {
+                if (i2d.Product.ProductUid == product.ProductUid) {
                     i2d.Qty += qty;
                     alreadyExists = true;
                     dispenseListBox.Items.RemoveAt(i);
@@ -138,8 +128,7 @@ namespace PoC
                 dispenseListBox.Items.Add(new ItemToDispense { Product = product, Qty = qty });
         }
 
-        private void removeItemButton_Click(object sender, EventArgs e)
-        {
+        private void removeItemButton_Click(object sender, EventArgs e) {
             if (dispenseListBox.Items.Count == 1)
                 dispenseListBox.Items.Clear();
 
@@ -147,13 +136,11 @@ namespace PoC
                 dispenseListBox.Items.RemoveAt(dispenseListBox.SelectedIndex);
         }
 
-        private void dispensersListBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
+        private void dispensersListBox_SelectedIndexChanged(object sender, EventArgs e) {
             addressesListBox.Items.Clear();
             IDispenser selectedDispenser = dispensersListBox.SelectedItem as IDispenser;
 
-            if (selectedDispenser != null)
-            {
+            if (selectedDispenser != null) {
                 IEnumerable<PoGRoute> routes =
                     _factDispenser._planogram.GetRoutes(selectedDispenser.Id);
 
@@ -162,16 +149,14 @@ namespace PoC
             }
         }
 
-        private void savePlanogramButton_Click(object sender, EventArgs e)
-        {
+        private void savePlanogramButton_Click(object sender, EventArgs e) {
             //if (planogramRichTextBox.Text.IsValidJson())
             //{
             //    File.WriteAllText("test_planogram.json", planogramRichTextBox.Text);
             //}
         }
 
-        public void Log(LogLevel level, string message)
-        {
+        public void Log(LogLevel level, string message) {
             Invoke(new MethodInvoker(delegate ()
             {
                 Color color = Color.Black;
@@ -187,8 +172,7 @@ namespace PoC
             }));
         }
 
-        private void retestButton_Click(object sender, EventArgs e)
-        {
+        private void retestButton_Click(object sender, EventArgs e) {
             retestButton.Enabled = false;
             _dispenser.TestAsync().ContinueWith(x => Invoke(new MethodInvoker(delegate ()
             {
@@ -201,10 +185,8 @@ namespace PoC
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void dispenseListBox_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            if (dispenseListBox.SelectedItem != null)
-            {
+        private void dispenseListBox_MouseDoubleClick(object sender, MouseEventArgs e) {
+            if (dispenseListBox.SelectedItem != null) {
                 ItemToDispense toD = (ItemToDispense)dispenseListBox.SelectedItem;
                 MessageBox.Show(System.Text.Json.JsonSerializer.Serialize(toD.Product.Routes), $"Routes with {toD.Product.ProductUid}");
             }
@@ -224,38 +206,30 @@ namespace PoC
             }
         }
 
-        private void dispensersListBox_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            if (MessageBox.Show("Do you really want to reset the machine?", "Reset", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
-            {
+        private void dispensersListBox_MouseDoubleClick(object sender, MouseEventArgs e) {
+            if (MessageBox.Show("Do you really want to reset the machine?", "Reset", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes) {
                 IDispenser d = dispensersListBox.SelectedItem as IDispenser;
                 if (d != null)
                     d.Reset();
             }
         }
 
-        private void unlockButton_Click(object sender, EventArgs e)
-        {
-            foreach (var x in dispensersListBox.SelectedItems)
-            {
+        private void unlockButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 d.Unlock();
             }
         }
 
-        private void resetButton_Click(object sender, EventArgs e)
-        {
-            foreach (var x in dispensersListBox.SelectedItems)
-            {
+        private void resetButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 d.Reset();
             }
         }
 
-        private void lightOnButton_Click(object sender, EventArgs e)
-        {
-            foreach (var x in dispensersListBox.SelectedItems)
-            {
+        private void lightOnButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 ILightEmitter lem = _factDispenser._lightEmitters.FirstOrDefault(x => x.Id == d.Id);
                 if (lem != null)
@@ -263,10 +237,8 @@ namespace PoC
             }
         }
 
-        private void lightOffButton_Click(object sender, EventArgs e)
-        {
-            foreach (var x in dispensersListBox.SelectedItems)
-            {
+        private void lightOffButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 ILightEmitter lem = _factDispenser._lightEmitters.FirstOrDefault(x => x.Id == d.Id);
                 if (lem != null)
@@ -274,8 +246,7 @@ namespace PoC
             }
         }
 
-        private void planogramTreeView_MouseClick(object sender, MouseEventArgs e)
-        {
+        private void planogramTreeView_MouseClick(object sender, MouseEventArgs e) {
             if (SelectedRoute != null && e.Button == MouseButtons.Right)
                 contextMenuStrip1.Show(MousePosition);
         }
@@ -284,8 +255,7 @@ namespace PoC
         {
             get
             {
-                if (planogramTreeView.SelectedNode != null)
-                {
+                if (planogramTreeView.SelectedNode != null) {
                     object tag = planogramTreeView.SelectedNode.Tag;
 
                     if (tag != null && tag is PoGRoute)
@@ -296,26 +266,27 @@ namespace PoC
             }
         }
 
-        private void pingToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            foreach (var d in _factDispenser._dispensers)
-            {
+        private void pingToolStripMenuItem_Click(object sender, EventArgs e) {
+            foreach (var d in _factDispenser._dispensers) {
                 IEnumerable<(string address, bool? isActive)> result = d.Ping(SelectedRoute.Address);
                 foreach (var r in result)
-                    if (r.isActive.HasValue)
-                    {
+                    if (r.isActive.HasValue) {
                         _planogram.GetRoute(r.address).Active = r.isActive.Value;
                         PoGRoute a = SelectedRoute;
                         planogramTreeView.SelectedNode.Text = $"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}";
                     }
             }
-
-            
         }
 
         private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
         private IVendingMachine _dispenser;
         private PoG _planogram;
         private VendingMachine _factDispenser;
+
+        private void activateToolStripMenuItem_Click(object sender, EventArgs e) {
+            foreach (var d in _factDispenser._dispensers) {
+                d.ActivateAsync(SelectedRoute.Address);
+            }
+        }
     }
 }

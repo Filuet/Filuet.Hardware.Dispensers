@@ -19,7 +19,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public decimal PollFrequencyHz { get; set; } = 0.5m;
         public VisionEsPlusLightEmitterSettings LightSettings { get; set; } = new VisionEsPlusLightEmitterSettings();
         /// <summary>
-        /// Max extraction weight per time
+        /// Max extraction weight per time in grams
         /// </summary>
         public int MaxExtractWeightPerTime { get; set; } = 3500;
 

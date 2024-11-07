@@ -22,7 +22,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -42,6 +42,14 @@ namespace Filuet.Hardware.Dispensers.Core
                     PingRoutes();
                 };
                 d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
+                d.onFailedToDispense += (sender, e) => Dispense(false, e.ProductsNotGivenFromAddresses.Select(x => (_planogram.GetProduct(x.Key).ProductUid, (ushort)x.Value)).ToArray());
+                d.onAddressUnavailable += (sender, e) => {
+                    _planogram.SetAttributes(e.address, d, false);
+                    if (e.emptyBelt)
+                        _planogram.GetRoute(e.address).Quantity = 0;
+
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+                };
             }
 
             foreach (ILightEmitter l in _lightEmitters)
