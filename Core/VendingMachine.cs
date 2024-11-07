@@ -39,10 +39,9 @@ namespace Filuet.Hardware.Dispensers.Core
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
                 d.onReset += (sender, e) => {
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
-                    PingRoutes();
+                    PingRoutesAsync().RunSynchronously();
                 };
                 d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
-                d.onFailedToDispense += (sender, e) => Dispense(false, e.ProductsNotGivenFromAddresses.Select(x => (_planogram.GetProduct(x.Key).ProductUid, (ushort)x.Value)).ToArray());
                 d.onAddressUnavailable += (sender, e) => {
                     _planogram.SetAttributes(e.address, d, false);
                     if (e.emptyBelt)
@@ -100,7 +99,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public async Task TestAsync()
             => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray());
 
-        private async Task PingRoutes()
+        private async Task PingRoutesAsync()
             => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray())
                 .ContinueWith(x => {
                     Parallel.ForEach(_dispensers, d => {

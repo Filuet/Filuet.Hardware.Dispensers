@@ -13,6 +13,7 @@ using System.Net.Sockets;
 using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
+using static Microsoft.Azure.Amqp.Serialization.SerializableType;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -115,7 +116,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             // get all the products from the cart that could be extracted from this machine 
             IEnumerable<string> products = prodRoutes.Select(x => x.Key);
             // prepare cart items to dispense from the machine
-            IEnumerable<CartItem> items = cart.Items.Where(i => products.Contains(i.ProductUid));
+            CartItem[] items = cart.Items.Where(i => products.Contains(i.ProductUid)).ToArray();
 
             ChangeLight(true); // Turn on lights before dispensing 
 
@@ -123,22 +124,25 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             int addedWeight = 0; // #5122
 
-            foreach (var item in items) {
+            for (int x=0; x< items.Length; x++) {
+                CartItem item = items[x];
+                CartItem next = x + 1 < items.Length ? items[x + 1] : null;
                 int productWeight = _planogram.GetProductWeight(item.ProductUid);
-                var routesForItem = prodRoutes[item.ProductUid].OrderByDescending(x => x.Quantity).ToList();
+                var itemRoutes = prodRoutes[item.ProductUid].OrderByDescending(x => x.Quantity).ToList();
+                int nextProductWeight = next == null ? 0 : _planogram.GetProductWeight(next.ProductUid);
 
                 for (uint i = 1; i <= item.Quantity; i++) {
                     state = null;
                     addedWeight += productWeight;
                     // if there's the same product to dispense next then take current weight, otherwise take weight of the next product
-                    int nextItemWeight = i + 1 <= a.Value ? productWeight : nextProductWeight; 
+                    int nextItemWeight = i + 1 <= item.Quantity ? productWeight : nextProductWeight; 
 
                     bool isTheVeryLastProduct = item.ProductUid == items.Last().ProductUid && i == item.Quantity;
                     bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime <= addedWeight;
                     bool sendVEND = isMaxWeightThresholdReached || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
                     // find the most populated address
-                    var route = routesForItem.OrderByDescending(x => x.Quantity).FirstOrDefault(x => x.Quantity > 0);
+                    var route = itemRoutes.OrderByDescending(x => x.Quantity).FirstOrDefault(x => x.Quantity > 0);
                     if (route == null) // no more routes to extract from. Let's dispense the next product
                         break;
 
@@ -155,11 +159,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30) {
                         try {
                             Thread.Sleep(3000);
-                            state = await Status(); // Wait for the next not empty state
+                            state = await StatusAsync(); // Wait for the next not empty state
                             if (state.HasValue) {
                                 if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
                                     productDispensed = false;
-                                    onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = a.Key.ToString(), emptyBelt = true });
+                                    onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = route.Address, emptyBelt = true });
                                     continue;
                                 }
                             }
@@ -168,16 +172,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         catch (Exception ex) { }
                     }
                     sw.Stop();
-
-                    // A dispensing issue occured.
-                    if (!productDispensed) {
-                        int notGivenQty = (int)(a.Value - i + 1);
-                        if (!addressesNotIssued.ContainsKey(a.Key))
-                            addressesNotIssued.Add(a.Key, notGivenQty);
-                        else addressesNotIssued[a.Key] += notGivenQty;
-
-                        break;
-                    }
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
