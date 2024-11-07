@@ -53,19 +53,22 @@ namespace Filuet.Hardware.Dispensers.Core
             TestAsync().ConfigureAwait(false);
         }
 
-        public async Task Dispense(params (string productUid, ushort quantity)[] items) {
+        public async Task DispenseAsync(Cart cart) {
             try {
                 await TestAsync();
+                // leave only active dispensers
+                IEnumerable<IDispenser> dispensers = _dispensers.Where(x => x.IsAvailable);
 
-                IEnumerable<DispenseCommand> dispensingChain = _chainBuilder.BuildChain(items, address => {
-                    PoGRoute route = _planogram.GetRoute(address);
-                    return route.Dispenser.GetAddressRank(address);
-                }, x => PingRoute(x));
-
-                IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
-
-                foreach (var dispenser in dispensers) {
-                    await dispenser.DispenseAsync(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+                // sort dispensers from most loaded to the less loaded taking into account products from the cart
+                List<uint> dispensersOrder = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid)).SelectMany(x => x.Routes)
+                    .Where(x => dispensers.Any(d => d.Id == x.Dispenser.Id))
+                    .GroupBy(x => x.Dispenser.Id).Select(group => new { group.Key, Qty = group.ToList().Sum(x => x.Quantity) })
+                    .OrderByDescending(x => x.Qty).Select(x => x.Key).ToList();
+                
+                foreach (var dispenserId in dispensersOrder) {
+                    IDispenser dispenser = dispensers.First(x => x.Id == dispenserId);
+                    IEnumerable<CartItem> items = await dispenser.DispenseAsync(cart);
+                    cart.RemoveDispensed(items); // remove dispensed and go to the next dispenser
                 }
             }
             catch (InvalidOperationException ex) {

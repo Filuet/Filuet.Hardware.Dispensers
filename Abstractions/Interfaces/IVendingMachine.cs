@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
@@ -20,7 +21,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<UnlockEventArgs> onMachineUnlocked;
         event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
 
-        Task Dispense(params (string productUid, ushort quantity)[] items);
+        Task DispenseAsync(Cart cart);
         void Unlock(params uint[] machines);
         Task TestAsync();
     }
