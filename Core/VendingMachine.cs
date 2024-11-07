@@ -22,7 +22,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -42,6 +42,14 @@ namespace Filuet.Hardware.Dispensers.Core
                     PingRoutes();
                 };
                 d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
+                d.onFailedToDispense += (sender, e) => Dispense(false, e.ProductsNotGivenFromAddresses.Select(x => (_planogram.GetProduct(x.Key).ProductUid, (ushort)x.Value)).ToArray());
+                d.onAddressUnavailable += (sender, e) => {
+                    _planogram.SetAttributes(e.address, d, false);
+                    if (e.emptyBelt)
+                        _planogram.GetRoute(e.address).Quantity = 0;
+
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+                };
             }
 
             foreach (ILightEmitter l in _lightEmitters)
@@ -53,7 +61,7 @@ namespace Filuet.Hardware.Dispensers.Core
             Test();
         }
 
-        public async Task Dispense(params (string productUid, ushort quantity)[] items) {
+        public async Task Dispense(bool retry = true, params(string productUid, ushort quantity)[] items) {
             List<string> routesToPing = new List<string>();
             foreach (var i in items)
                 routesToPing.AddRange(_planogram[i.productUid]?.Addresses);
@@ -69,7 +77,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 IEnumerable<IDispenser> dispensers = dispensingChain.Select(x => x.Route.Dispenser).Distinct().OrderBy(x => x.Id);
 
                 foreach (var dispenser in dispensers) {
-                    await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity));
+                    await dispenser.MultiplyDispensing(dispensingChain.Where(x => x.Route.Dispenser == dispenser).ToDictionary(x => x.Route.Address, y => (uint)y.Quantity), retry);
                 }
             }
             catch (InvalidOperationException ex) {

@@ -12,9 +12,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onDispensing;
         event EventHandler<DispenseEventArgs> onDispensed;
         event EventHandler<DispenseEventArgs> onAbandonment;
-        event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         event EventHandler<DispenserTestEventArgs> onTest;
+        event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
         event EventHandler onReset;
+        event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
 
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
@@ -28,7 +30,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 
         Task Dispense(string address, uint quantity);
 
-        Task MultiplyDispensing(IDictionary<string, uint> map);
+        Task MultiplyDispensing(IDictionary<string, uint> map, bool retry = true);
 
         /// <summary>
         /// True means that the address is available

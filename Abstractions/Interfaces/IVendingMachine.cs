@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
@@ -18,9 +19,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
         event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
 
-        Task Dispense(params (string productUid, ushort quantity)[] items);
+        Task Dispense(bool retry = true, params(string productUid, ushort quantity)[] items);
         void Unlock(params uint[] machines);
         Task Test();
     }

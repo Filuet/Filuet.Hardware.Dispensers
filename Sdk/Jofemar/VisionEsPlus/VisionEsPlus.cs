@@ -21,11 +21,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<bool> onLightsChanged;
         public event EventHandler<DispenseEventArgs> onDispensing;
         public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         /// <summary>
         /// Fires when the customer forget to pick up the products
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
+        public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
+        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
 
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
@@ -87,7 +89,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             await MultiplyDispensing(map);
         }
 
-        internal async Task MultiplyDispensing(IDictionary<EspBeltAddress, uint> map) {
+        internal async Task MultiplyDispensing(IDictionary<EspBeltAddress, uint> map, bool retry = true) {
+            Dictionary<string, int> addressesNotIssued = new Dictionary<string, int>();
+
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await Status();
 
             if (state?.state != DispenserStateSeverity.Normal)
@@ -112,7 +116,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     // if there's the same product to dispense next then take current weight, otherwise take weight of the next product
                     int nextItemWeight = i + 1 <= a.Value ? productWeight : nextProductWeight; 
 
-                    bool isTheVeryLastProduct = a.Key == map.Last().Key && i == a.Value;
+                    bool isTheVeryLastProduct = x == (map.Count - 1) && (i == a.Value);
 
                     // if (total weight + weight of the next product) is bigger than max carrying weight threshold of the elevator then interrupt the dispensing process
                     bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime < addedWeight + nextItemWeight;
@@ -125,17 +129,36 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     if (sendVEND)
                         addedWeight = 0; // flush elevator used weight
 
+                    bool productDispensed = true;
+
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
                     while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30) {
                         try {
                             Thread.Sleep(3000);
                             state = await Status(); // Wait for the next not empty state
+                            if (state.HasValue) {
+                                if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
+                                    productDispensed = false;
+                                    onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = a.Key.ToString(), emptyBelt = true });
+                                    continue;
+                                }
+                            }
                         }
                         catch (SocketException) { }
                         catch (Exception ex) { }
                     }
                     sw.Stop();
+
+                    // A dispensing issue occured.
+                    if (!productDispensed) {
+                        int notGivenQty = (int)(a.Value - i + 1);
+                        if (!addressesNotIssued.ContainsKey(a.Key))
+                            addressesNotIssued.Add(a.Key, notGivenQty);
+                        else addressesNotIssued[a.Key] += notGivenQty;
+
+                        break;
+                    }
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
@@ -150,7 +173,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                     case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
                                         addedWeight = 0; // let's drop the value JIC. Because the machine can park the elevator without VEND command. For example, the sensor was blocked by a volumetric product 
 
-                                        onWaitingProductsToBeRemoved?.Invoke(this, DispenseEventArgs.Create(a.Key));
+                                        onWaitingProductsToBeRemoved?.Invoke(this, droppedIntoTheElevatorProducts);
                                         state = null;
 
                                         Stopwatch sw1 = new Stopwatch();
@@ -203,6 +226,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             // Turn off lights after dispensing
             if (!_settings.LightSettings.LightsAreNormallyOn)
                 ChangeLight(false);
+
+            if (retry && addressesNotIssued.Any())
+                onFailedToDispense?.Invoke(this, new FailedToDispenseEventArgs { ProductsNotGivenFromAddresses = addressesNotIssued });
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)

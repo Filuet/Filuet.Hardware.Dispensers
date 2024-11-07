@@ -21,7 +21,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
-        public event EventHandler<DispenseEventArgs> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
+        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
 
         public VisionEsPlusWrapper(uint id, VisionEsPlus machineAdapter)
         {
@@ -32,8 +34,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter.onDispensing += (sender, e) => onDispensing?.Invoke(this, e);
             _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
             _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
-            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
             _machineAdapter.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(this, e);
+            _machineAdapter.onFailedToDispense += (sender, e) => onFailedToDispense?.Invoke(this, e);
+            _machineAdapter.onAddressUnavailable += (sender, e) => onAddressUnavailable?.Invoke(this, e);
         }
 
         public async Task Test()
@@ -56,8 +59,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         /// <param name="map"></param>
         /// <returns></returns>
-        public async Task MultiplyDispensing(IDictionary<string, uint> map)
-            => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value));
+        public async Task MultiplyDispensing(IDictionary<string, uint> map, bool retry = true)
+            => await _machineAdapter.MultiplyDispensing(map.ToDictionary(x => (Models.EspBeltAddress)x.Key, x => x.Value), retry);
 
         public IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses)
         {
