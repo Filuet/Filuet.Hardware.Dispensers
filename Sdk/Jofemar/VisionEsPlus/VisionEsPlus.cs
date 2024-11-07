@@ -101,7 +101,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             List<CartItem> result = new List<CartItem>(); // extracted products (with fact quantity)
             Action<string> appendToDispensed = productUid => {
-                CartItem item = result.FirstOrDefault(x=>x.ProductUid == productUid);
+                CartItem item = result.FirstOrDefault(x => x.ProductUid == productUid);
                 if (item == null) {
                     item = new CartItem { ProductUid = productUid, Quantity = 1 };
                     result.Add(item);
@@ -112,7 +112,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             // all active routes of the current machine according to the planogram with the cart products
             Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid))
                 .Select(x => new KeyValuePair<string, IEnumerable<PoGRoute>>(x.ProductUid, x.Routes.Where(x => (x.Active ?? true) && x.Dispenser.Alias == _settings.Alias)))
-                .ToDictionary(x => x.Key, x => x.Value.Select(y=> new RouteBalance { Address = y.Address, Quantity = y.Quantity }));
+                .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity }));
             // get all the products from the cart that could be extracted from this machine 
             IEnumerable<string> products = prodRoutes.Select(x => x.Key);
             // prepare cart items to dispense from the machine
@@ -124,7 +124,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             int addedWeight = 0; // #5122
 
-            for (int x=0; x< items.Length; x++) {
+            for (int x = 0; x < items.Length; x++) {
                 CartItem item = items[x];
                 CartItem next = x + 1 < items.Length ? items[x + 1] : null;
                 int productWeight = _planogram.GetProductWeight(item.ProductUid);
@@ -135,7 +135,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     state = null;
                     addedWeight += productWeight;
                     // if there's the same product to dispense next then take current weight, otherwise take weight of the next product
-                    int nextItemWeight = i + 1 <= item.Quantity ? productWeight : nextProductWeight; 
+                    int nextItemWeight = i + 1 <= item.Quantity ? productWeight : nextProductWeight;
 
                     bool isTheVeryLastProduct = item.ProductUid == items.Last().ProductUid && i == item.Quantity;
                     bool isMaxWeightThresholdReached = _settings.MaxExtractWeightPerTime <= addedWeight;

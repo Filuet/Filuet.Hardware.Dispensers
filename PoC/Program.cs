@@ -43,7 +43,7 @@ namespace PoC
                                 Alias = "Machine 1",
                                 PortNumber = 5050,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
-                                IpOrSerialAddress = "COM9",// "172.16.7.104",//
+                                IpOrSerialAddress = "COM11",// "172.16.7.104",//
                                 LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
                                 PollFrequencyHz = 0.33m,
                                 MaxExtractWeightPerTime = 1200
@@ -57,24 +57,23 @@ namespace PoC
                             integratedEmitters.Add(machine1);
                             #endregion
 
-                            // Uncomment to enable machine2
-                            //#region Machine2
-                            //VisionEsPlusSettings settings2 = new VisionEsPlusSettings
-                            //{
-                            //    Alias = "Machine 2",
-                            //    PortNumber = 5051,
-                            //    Address = string.Format("0x{0:X2}", 1), // "0x01",
-                            //    IpAddress = "172.16.7.103",
-                            //    LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
-                            //    PollFrequencyHz = 1m
-                            //};
+                            //Uncomment to enable machine2
+                            #region Machine2
+                            VisionEsPlusSettings settings2 = new VisionEsPlusSettings {
+                                Alias = "Machine 2",
+                                PortNumber = 5051,
+                                Address = string.Format("0x{0:X2}", 1), // "0x01",
+                                IpOrSerialAddress = "COM9",// "172.16.7.103",
+                                LightSettings = new VisionEsPlusLightEmitterSettings { LightsAreNormallyOn = true },
+                                PollFrequencyHz = 1m
+                            };
 
-                            //ICommunicationChannel channel2 = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpAddress), settings2.PortNumber); });
+                            ICommunicationChannel channel2 = new EspSerialChannel(s => { s.PortName = settings2.IpOrSerialAddress; }); // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpOrSerialAddress), settings2.PortNumber); });
 
-                            //VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(channel2, settings2));
-                            //result.Add(machine2);
-                            //integratedEmitters.Add(machine2);
-                            //#endregion
+                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(channel2, settings2, planogram));
+                            result.Add(machine2);
+                            integratedEmitters.Add(machine2);
+                            #endregion
 
                             return result;
                         })

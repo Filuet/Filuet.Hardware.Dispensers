@@ -97,7 +97,7 @@ namespace PoC
                 MessageBox.Show("Add some products first", "No products provided", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            _dispenser.Dispense(true, ToDispense.Select(x => (x.Product.ProductUid, x.Qty)).ToArray());
+            _dispenser.DispenseAsync(new Cart { Items = ToDispense.Select(x => new CartItem { ProductUid = x.Product.ProductUid, Quantity = x.Qty }) });
         }
 
         private void addSkuButton_Click(object sender, EventArgs e) {
