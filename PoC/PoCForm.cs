@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
+using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
 
 namespace PoC
 {
@@ -47,7 +48,7 @@ namespace PoC
                             dispensersListBox.Items.Add(d);
 
                         if (d.Id == e.Dispenser.Id)
-                            Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"{e.Dispenser.Alias} status: {e.Message}");
+                            Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"Machine {e.Dispenser.Id} status: {e.Message}");
                     }
                 }));
             };
@@ -80,7 +81,7 @@ namespace PoC
             planogramTreeView.Nodes.Clear();
 
             foreach (var p in _planogram.Products) {
-                TreeNode product = new TreeNode(p.ProductUid) { Tag = p };
+                TreeNode product = new TreeNode(p.Product) { Tag = p };
                 planogramTreeView.Nodes.Add(product);
                 foreach (var a in p.Routes) {
                     product.Nodes.Add(new TreeNode($"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}") { Tag = a });
@@ -97,7 +98,7 @@ namespace PoC
                 MessageBox.Show("Add some products first", "No products provided", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            _dispenser.DispenseAsync(new Cart(ToDispense.Select(x => new CartItem { ProductUid = x.Product.ProductUid, Quantity = x.Qty })));
+            _dispenser.DispenseAsync(new Cart(ToDispense.Select(x => new CartItem { ProductUid = x.Product.Product, Quantity = x.Qty })));
         }
 
         private void addSkuButton_Click(object sender, EventArgs e) {
@@ -108,7 +109,7 @@ namespace PoC
 
             for (int i = 0; i < dispenseListBox.Items.Count; i++) {
                 ItemToDispense i2d = dispenseListBox.Items[i] as ItemToDispense;
-                if (i2d.Product.ProductUid == product.ProductUid) {
+                if (i2d.Product.Product == product.Product) {
                     i2d.Qty += qty;
                     alreadyExists = true;
                     dispenseListBox.Items.RemoveAt(i);
@@ -140,12 +141,18 @@ namespace PoC
             addressesListBox.Items.Clear();
             IDispenser selectedDispenser = dispensersListBox.SelectedItem as IDispenser;
 
-            if (selectedDispenser != null) {
-                IEnumerable<PoGRoute> routes =
-                    _factDispenser._planogram.GetRoutes(selectedDispenser.Id);
+            Func<string, bool> isValidAddress = x => {
+                if (selectedDispenser is VisionEsPlusWrapper)
+                    return x.StartsWith(selectedDispenser.Id + "/");
 
-                foreach (var r in routes)
-                    addressesListBox.Items.Add($"{r} of {_planogram.GetProduct(r.Address).ProductUid}");
+                return false;
+            };
+
+            if (selectedDispenser != null) {
+                foreach (var p in Planogram.Products)
+                    foreach (var r in p.Routes)
+                        if (isValidAddress(r.Address))
+                            addressesListBox.Items.Add($"{r} of {_planogram.GetProduct(r.Address).Product}");
             }
         }
 
@@ -188,7 +195,7 @@ namespace PoC
         private void dispenseListBox_MouseDoubleClick(object sender, MouseEventArgs e) {
             if (dispenseListBox.SelectedItem != null) {
                 ItemToDispense toD = (ItemToDispense)dispenseListBox.SelectedItem;
-                MessageBox.Show(System.Text.Json.JsonSerializer.Serialize(toD.Product.Routes), $"Routes with {toD.Product.ProductUid}");
+                MessageBox.Show(System.Text.Json.JsonSerializer.Serialize(toD.Product.Routes), $"Routes with {toD.Product.Product}");
             }
         }
 
@@ -278,7 +285,7 @@ namespace PoC
             }
         }
 
-        private Dictionary<uint, bool> MachineIdIsAvailable = new Dictionary<uint, bool>();
+        private Dictionary<int, bool> MachineIdIsAvailable = new Dictionary<int, bool>();
         private IVendingMachine _dispenser;
         private PoG _planogram;
         private VendingMachine _factDispenser;

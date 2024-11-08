@@ -43,7 +43,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 };
                 d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
                 d.onAddressUnavailable += (sender, e) => {
-                    _planogram.SetAttributes(e.address, d, false);
+                    _planogram.SetAttributes(e.address, false);
                     if (e.emptyBelt)
                         _planogram.GetRoute(e.address).Quantity = 0;
                     else _planogram.GetRoute(e.address).Active = false;
@@ -70,7 +70,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 List<(IDispenser dispenser, int qty)> dispenserRank = new List<(IDispenser, int)>();
 
                 foreach (var d in dispensers) {
-                    IEnumerable<PoGRoute> candidates = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid)).SelectMany(x => x.Routes).Where(x => d.Id == x.DispenserId);
+                    IEnumerable<PoGRoute> candidates = _planogram.Products.Where(x => cart.Products.Contains(x.Product)).SelectMany(x => x.Routes).Where(x => d.Id == x.DispenserId);
                     int qty = candidates.Sum(x => x.Quantity);
                     if (qty > 0)
                         dispenserRank.Add((d, qty));
@@ -85,7 +85,7 @@ namespace Filuet.Hardware.Dispensers.Core
             }
         }
 
-        public void Unlock(params uint[] machines) {
+        public void Unlock(params int[] machines) {
             Parallel.ForEach(_dispensers, x => {
                 if (!machines.Any() || machines.Contains(x.Id)) {
                     x.Unlock();
@@ -108,7 +108,7 @@ namespace Filuet.Hardware.Dispensers.Core
                         var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();
                         foreach (var a in pingResult)
                             if (a.isActive.HasValue)
-                                _planogram.SetAttributes(a.address, d, a.isActive.Value);
+                                _planogram.SetAttributes(a.address, a.isActive.Value);
                     });
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
@@ -125,7 +125,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 foreach (var a in pingResult)
                     if (a.isActive.HasValue) {
                         isActive = a.isActive.Value;
-                        _planogram.SetAttributes(a.Item1, d, isActive);
+                        _planogram.SetAttributes(a.Item1, isActive);
                     }
             }
 

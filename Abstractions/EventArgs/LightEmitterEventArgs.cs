@@ -7,17 +7,12 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <summary>
         /// Emitter id
         /// </summary>
-        public uint Id { get; set; }
-
-        /// <summary>
-        /// Emitter alias
-        /// </summary>
-        public string Alias { get; set; }
+        public int Id { get; set; }
 
         public bool IsOn { get; set; }
 
-        public static LightEmitterEventArgs Create(uint id, string alias, bool isOn)
-            => new LightEmitterEventArgs { Id = id, Alias = alias, IsOn = isOn };
+        public static LightEmitterEventArgs Create(int id, bool isOn)
+            => new LightEmitterEventArgs { Id = id, IsOn = isOn };
 
         public override string ToString() => $"{GetType().Name}({IsOn})";
     }

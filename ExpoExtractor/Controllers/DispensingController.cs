@@ -22,8 +22,8 @@ namespace ExpoExtractor.Controllers
                 if (_message == null)
                     _message = new List<MachineTestResult>();
 
-                _message.RemoveAll(x => x.Machine == e.Dispenser.Alias);
-                _message.Add(new MachineTestResult { Machine = e.Dispenser.Alias, Status = e.Message });
+                _message.RemoveAll(x => x.Machine == e.Dispenser.Id);
+                _message.Add(new MachineTestResult { Machine = e.Dispenser.Id, Status = e.Message });
             };
         }
 
@@ -59,7 +59,7 @@ namespace ExpoExtractor.Controllers
         [HttpGet("stock")]
         public IEnumerable<ProductStock> Stock()
             => _planogram.Products.Select(x => new ProductStock {
-                Sku = x.ProductUid,
+                Sku = x.Product,
                 Quantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.Quantity).Sum(),
                 MaxQuantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.MaxQuantity).Sum(),
             });
@@ -74,7 +74,7 @@ namespace ExpoExtractor.Controllers
 
         [HttpGet("unlock/{machine}")]
         public void Unlock(int machine)
-            => _vendingMachine.Unlock((uint)machine);
+            => _vendingMachine.Unlock(machine);
 
         private readonly IVendingMachine _vendingMachine;
         private readonly PoG _planogram;

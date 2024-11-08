@@ -6,10 +6,8 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     {
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
 
-        uint Id { get; }
-
+        int Id { get; }
         void LightOn();
-
         void LightOff();
     }
 }

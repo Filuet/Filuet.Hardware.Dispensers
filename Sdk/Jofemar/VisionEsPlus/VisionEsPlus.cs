@@ -10,11 +10,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
-using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Threading.Tasks;
-using static Microsoft.Azure.Amqp.Serialization.SerializableType;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -36,21 +33,22 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
         public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
-
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
         /// 'true' means command, 'false' means response
         /// </summary>
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
-        public VisionEsPlus(int id, ICommunicationChannel channel, VisionEsPlusSettings settings, Func<PoG> getPlanogram) {
-            ID = id;
+        public int Id => _settings.Id;
 
+        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<PoG> getPlanogram) {
             _settings = settings;
-            _planogram = getPlanogram?.Invoke();
+            _getPlanogram = getPlanogram;
 
-            if (_planogram == null)
+            if (_getPlanogram == null)
                 throw new ArgumentNullException("Planogram is mandatory");
+
+            _planogram = _getPlanogram?.Invoke();
 
             byte machineAddress = (byte)(byte.Parse(_settings.Address.Substring(2), NumberStyles.HexNumber) + 0x80);
             _commandBody = new byte[] { 0x02 /* start of the message */, 0x30 /* Filler1 */, 0x30 /* Filler2 */,
@@ -114,10 +112,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns></returns>
         private async Task<Cart> DispenseSessionAsync(Cart cart, bool retry = false) {
             Func<int, List<Slot>> _rebuildSlotChain = minTray => { // as soon as we can only ascend to get products we have to exclude lower trays
+                PoG planogram = _calcPlanogram();
                 // all active and not empty routes of the current machine with the cart products
-                Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = _planogram.Products.Where(x => cart.Products.Contains(x.ProductUid))
-                    .Select(x => new KeyValuePair<string, IEnumerable<PoGRoute>>(x.ProductUid, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (retry ? 0 : 1) && x.DispenserId == ID)))
-                    .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Product = _planogram[y.Address].ProductUid }));
+                Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = planogram.Products.Where(x => cart.Products.Contains(x.Product))
+                    .Select(x => new KeyValuePair<string, IEnumerable<PoGRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (retry ? 0 : 1))))
+                    .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Product = planogram[y.Address].Product }));
 
                 // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
                 List<RouteBalance> balances = prodRoutes.SelectMany(x => x.Value)
@@ -158,6 +157,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             int addedWeight = 0; // #5122
 
             List<Slot> availableSlots = _rebuildSlotChain(0);
+            // ping slots and disable unavailable
 
             while (availableSlots.Any()) {
                 Slot slot = availableSlots.First();
@@ -280,20 +280,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         private void Dispense(EspBeltAddress address, bool lastCommand)
             => ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
 
-        internal bool? IsBeltActive(uint machineId, string route) {
+        internal bool? IsBeltActive(string route) {
             EspBeltAddress address = route;
 
-            if (address.Machine != machineId) // The route belongs to another machine
+            if (address.Machine != Id) // The route belongs to another machine
                 return null;
 
             return ExecuteCommand(CheckChannelCommand(address.Tray, address.Belt), "CheckBelt", (response, code) =>
                 response.Length == 8 && (response[4] == 0x43 || response[4] == 0x41)); // 0x44 means bealt is unavailable
         }
 
-        internal async Task<bool> ActivateBeltAsync(uint machineId, string route) {
+        internal async Task<bool> ActivateBeltAsync(string route) {
             EspBeltAddress address = route;
 
-            if (address.Machine != machineId) // The route belongs to another machine
+            if (address.Machine != Id) // The route belongs to another machine
                 return false;
 
             return ExecuteCommand(ActivateBeltCommand(address.Tray, address.Belt), "ActivateBelt", (response, code) =>
@@ -443,7 +443,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 byte[] response = null;
 
                 try {
-                    onDataMoving?.Invoke(this, (true, $"{message} {_settings.ID}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
+                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
                 catch (SocketException) { }
@@ -452,7 +452,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 postAction?.Invoke(code);
 
-                onDataMoving?.Invoke(this, (false, $"{message} {_settings.ID}: {code}", _bitConvert(response)));
+                onDataMoving?.Invoke(this, (false, $"{message} Machine {Id}: {code}", _bitConvert(response)));
             }
         }
 
@@ -461,25 +461,28 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 byte[] response = null;
 
                 try {
-                    onDataMoving?.Invoke(this, (true, $"{message} {_settings.ID}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
+                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
                 catch (SocketException) { }
 
                 VisionEsPlusResponseCodes code = ParseResponse(response);
 
-                onDataMoving?.Invoke(this, (false, $"{message} {_settings.ID}: {code}", _bitConvert(response)));
+                onDataMoving?.Invoke(this, (false, $"{message} Machine {Id}: {code}", _bitConvert(response)));
 
                 return postAction.Invoke(response, code);
             }
         }
 
         private string _bitConvert(byte[] data) => BitConverter.ToString(data).Replace('-', ' ');
+
+        private PoG _calcPlanogram() {
+            PoG fullPlanogram = _getPlanogram?.Invoke();
+            return fullPlanogram.GetPartialPlanogram(x => ((EspBeltAddress)x).Machine == Id);
+        }
         #endregion
 
-        internal string Alias => _settings.Alias;
-
-        private readonly int ID;
+        private readonly Func<PoG> _getPlanogram;
         private readonly PoG _planogram;
         private readonly VisionEsPlusSettings _settings;
         private readonly byte[] _commandBody;

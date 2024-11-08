@@ -17,11 +17,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenserTestEventArgs> onTest;
         event EventHandler onReset;
         event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
-
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
-        string Alias { get; }
-        uint Id { get; }
+        int Id { get; }
         bool IsAvailable { get; }
 
         Task TestAsync();
@@ -34,8 +32,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         /// <returns></returns>
         IEnumerable<(string address, bool? isActive)> Ping(params string[] addresses);
         Task ActivateAsync(params string[] addresses);
-
-        uint GetAddressRank(string address);
         Task Reset();
         /// <summary>
         /// Open door or something

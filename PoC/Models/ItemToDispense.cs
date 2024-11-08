@@ -7,6 +7,6 @@ namespace PoC.Models
         public PoGProduct Product { get; set; }
         public ushort Qty { get; set; }
 
-        public override string ToString() => $"{Product?.ProductUid}x{Qty}";
+        public override string ToString() => $"{Product?.Product}x{Qty}";
     }
 }

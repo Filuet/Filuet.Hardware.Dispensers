@@ -13,7 +13,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Helpers
         /// <returns>List of product identifiers (sku)</returns>
         public static IEnumerable<(string productUid, int count, int maxCount)> GetStock(this PoG planogram) {
             foreach (var product in planogram.Products)
-                yield return (product.ProductUid, product.Quantity, product.MaxQuantity);
+                yield return (product.Product, product.Quantity, product.MaxQuantity);
         }
     }
 }

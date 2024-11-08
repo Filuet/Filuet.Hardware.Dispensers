@@ -12,17 +12,19 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// <summary>
     /// Planogram
     /// </summary>
-    public class PoG {
+    public class PoG
+    {
         public const int DEFAULT_PRODUCT_WEIGHT_GR = 500;
 
-        public PoGProduct this[string productOrAddress] {
+        public PoGProduct this[string productOrAddress]
+        {
             get
             {
                 Regex regex = new Regex("^[\\d]{1}/[\\d]{2}/[\\d]{1}$");
                 if (regex.Match(productOrAddress).Success)
                     return Products.FirstOrDefault(x => x.Routes.Any(r => r.Address == productOrAddress));
 
-                return Products.FirstOrDefault(x => string.Equals(x.ProductUid, productOrAddress, StringComparison.InvariantCultureIgnoreCase));
+                return Products.FirstOrDefault(x => string.Equals(x.Product, productOrAddress, StringComparison.InvariantCultureIgnoreCase));
             }
         }
 
@@ -31,9 +33,6 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
         public IEnumerable<PoGRoute> GetRoutes(IEnumerable<string> addresses)
             => Products.SelectMany(x => x.Routes).Where(x => addresses.Any(r => r == x.Address));
-
-        public IEnumerable<PoGRoute> GetRoutes(uint machine)
-            => Products.SelectMany(x => x.Routes).Where(x => x.Dispenser?.Id == machine);
 
         public PoGProduct GetProduct(string address)
             => Products.FirstOrDefault(x => x.Addresses.Contains(address));
@@ -53,8 +52,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
         }
 
-        public void Write(string path)
-        {
+        public void Write(string path) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             File.WriteAllText(path, JsonSerializer.Serialize(Products, options));
@@ -76,7 +74,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             foreach (var p in Products) {
                 PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
                 if (existedRoute != null) {
-                    if (string.Equals(p.ProductUid, productUid, StringComparison.InvariantCultureIgnoreCase)) {
+                    if (string.Equals(p.Product, productUid, StringComparison.InvariantCultureIgnoreCase)) {
                         existedRoute.Quantity = route.Quantity;
                         existedRoute.MaxQuantity = route.MaxQuantity;
                         existedRoute.Active = route.Active;
@@ -96,7 +94,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                 PoGProduct p = this[productUid];
                 if (p != null)
                     p.Routes.Add(route);
-                else Products.Add(new PoGProduct { ProductUid = productUid, Routes = new List<PoGRoute> { route } });
+                else Products.Add(new PoGProduct { Product = productUid, Routes = new List<PoGRoute> { route } });
             }
 
             foreach (var p in toRemove)
@@ -118,12 +116,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                 Products.Remove(toDelete);
         }
 
-        public void SetAttributes(string route, IDispenser dispenser, bool available) {
+        public void SetAttributes(string route, bool available) {
             foreach (var p in Products)
                 foreach (var r in p.Routes)
                     if (r.Address == route) {
-                        r.Active = dispenser != null && available;
-                        r.Dispenser = dispenser;
+                        r.Active = available;
                         break;
                     }
         }
@@ -136,18 +133,39 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public int GetProductWeight(string productUid) =>
             this[productUid]?.Weight ?? DEFAULT_PRODUCT_WEIGHT_GR;
 
+        public PoG GetPartialPlanogram(Func<string, bool> isAddressValid) {
+            PoG result = new PoG();
+            foreach (var p in Products) {
+                foreach (var r in p.Routes) {
+                    if (isAddressValid(r.Address)) {
+                        PoGProduct product = result.Products.FirstOrDefault(x => x.Product == p.Product);
+                        if (product == null) {
+                            product = new PoGProduct {
+                                Product = p.Product,
+                                Weight = p.Weight
+                            };
+                            result.Products.Add(product);
+                        }
+
+                        product.Routes.Add(new PoGRoute { Active = r.Active, Address = r.Address, MaxQuantity = r.MaxQuantity, Quantity = r.Quantity});
+                    }
+                }
+            }
+            return result;
+        }
+
         public string ToString(bool writeIndented = true) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
             options.WriteIndented = writeIndented;
-            return JsonSerializer.Serialize(Products.OrderBy(x => x.ProductUid), options);
+            return JsonSerializer.Serialize(Products.OrderBy(x => x.Product), options);
         }
     }
 
     public class PoGProduct
     {
         [JsonPropertyName("product")]
-        public string ProductUid { get; set; }
+        public string Product { get; set; }
 
         [JsonPropertyName("routes")]
         public ICollection<PoGRoute> Routes { get; set; }
@@ -164,7 +182,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonIgnore]
         public int MaxQuantity => Routes?.Where(x => x.Active ?? false).Sum(x => x.MaxQuantity) ?? 0;
 
-        public override string ToString() => ProductUid;
+        public override string ToString() => Product;
     }
 
     public class PoGRoute

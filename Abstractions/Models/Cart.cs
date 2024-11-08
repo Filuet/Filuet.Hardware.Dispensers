@@ -11,11 +11,9 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public IEnumerable<CartItem> Items => _items;
         private List<CartItem> _items { get; set; }
 
-        public Cart(IEnumerable<CartItem> items)
-        {
+        public Cart(IEnumerable<CartItem> items) {
             _items = items.ToList();
         }
-
 
         public IEnumerable<string> Products
             => Items.Select(x => x.ProductUid).Distinct();

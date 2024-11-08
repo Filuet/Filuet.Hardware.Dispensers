@@ -1,6 +1,6 @@
 [
 	{
-		"Alias": "Machine 1",
+		"Id": 1,
 		"PortNumber": 5050,
 		"Address": "0x01",
 		"IpOrSerialAddress": "COM11",
@@ -11,7 +11,7 @@
 		"MaxExtractWeightPerTime": 2500
 	},
 	{
-		"Alias": "Machine 2",
+		"Id": 2,
 		"PortNumber": 5050,
 		"Address": "0x01",
 		"IpOrSerialAddress": "COM9",

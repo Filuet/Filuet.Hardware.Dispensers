@@ -40,7 +40,7 @@ namespace PoC
                             List<IDispenser> result = new List<IDispenser>();
                             #region Machine1
                             VisionEsPlusSettings settings1 = new VisionEsPlusSettings {
-                                Alias = "Machine 1",
+                                Id = 1,
                                 PortNumber = 5050,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
                                 IpOrSerialAddress = "COM11",// "172.16.7.104",//
@@ -52,7 +52,7 @@ namespace PoC
                             ICommunicationChannel channel1 = new EspSerialChannel(s => { s.PortName = settings1.IpOrSerialAddress; });
                            // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
 
-                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(1, new VisionEsPlus(1, channel1, settings1, () => sp.GetService<PoG>()));
+                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(new VisionEsPlus(channel1, settings1, () => sp.GetService<PoG>()));
                             result.Add(machine1);
                             integratedEmitters.Add(machine1);
                             #endregion
@@ -60,7 +60,7 @@ namespace PoC
                             //Uncomment to enable machine2
                             #region Machine2
                             VisionEsPlusSettings settings2 = new VisionEsPlusSettings {
-                                Alias = "Machine 2",
+                                Id = 2,
                                 PortNumber = 5051,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
                                 IpOrSerialAddress = "COM9",// "172.16.7.103",
@@ -70,7 +70,7 @@ namespace PoC
 
                             ICommunicationChannel channel2 = new EspSerialChannel(s => { s.PortName = settings2.IpOrSerialAddress; }); // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpOrSerialAddress), settings2.PortNumber); });
 
-                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(2, new VisionEsPlus(2, channel2, settings2, () => sp.GetService<PoG>()));
+                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(new VisionEsPlus(channel2, settings2, () => sp.GetService<PoG>()));
                             result.Add(machine2);
                             integratedEmitters.Add(machine2);
                             #endregion
@@ -85,7 +85,7 @@ namespace PoC
                     vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is finished {e}");
                     vendingMachine.onAbandonment += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Warning, $"Likely that products were abandoned {e}");
                     vendingMachine.onFailed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Error, e.ToString());
-                    vendingMachine.onLightsChanged += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+                    vendingMachine.onLightsChanged += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
                     vendingMachine.onPlanogramClarification += (sender, e) => {
                         form.Planogram = e.Planogram;
                         form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");

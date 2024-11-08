@@ -35,13 +35,11 @@ builder.Services.AddSingleton(planogram)
                 List<IDispenser> result = new List<IDispenser>();
                 int id = 0;
                 foreach (var curSettings in machineSettings) {
-                    ICommunicationChannel channel = null;
-                    if (curSettings.IpOrSerialAddress.Contains("COM"))
-                        channel = new EspSerialChannel(s => { s.PortName = curSettings.IpOrSerialAddress; });
-                    else
-                        channel = new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(curSettings.IpOrSerialAddress), curSettings.PortNumber); });
+                    ICommunicationChannel channel = curSettings.IpOrSerialAddress.Contains("COM") ?
+                        new EspSerialChannel(s => { s.PortName = curSettings.IpOrSerialAddress; }) :
+                        new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(curSettings.IpOrSerialAddress), curSettings.PortNumber); });
 
-                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper((uint)++id, new VisionEsPlus(id, channel, curSettings, () => sp.GetService<PoG>()));
+                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper(new VisionEsPlus(channel, curSettings, () => sp.GetService<PoG>()));
                     result.Add(machine);
                     integratedEmitters.Add(machine);
                 }
@@ -70,8 +68,8 @@ builder.Services.AddSingleton(planogram)
         };
 
         vendingMachine.onLightsChanged += (sender, e) => {
-            StatusSingleton.Status = new CurrentStatus { Action = "lights", Status = "success", Message = $"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}" };
-            Console.WriteLine($"{e.Alias} Lights are {(e.IsOn ? "On" : "Off")}");
+            StatusSingleton.Status = new CurrentStatus { Action = "lights", Status = "success", Message = $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}" };
+            Console.WriteLine($"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
         };
 
         vendingMachine.onMachineUnlocked += (sender, e) => {

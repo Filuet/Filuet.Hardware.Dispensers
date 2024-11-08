@@ -5,7 +5,7 @@ namespace ExpoExtractor
     public class MachineTestResult
     {
         [JsonPropertyName("machine")]
-        public string Machine { get; set; }
+        public int Machine { get; set; }
         [JsonPropertyName("status")]
         public string Status { get; set; }
     }

@@ -4,7 +4,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusSettings
     {
-        public string Alias { get; set; }
+        public int Id { get; set; }
         /// <summary>
         /// TCP: Ip address; Serial: 0x01 by default (all machines have 0x01 address cause we're separating them by serial ports)
         /// </summary>
@@ -22,19 +22,5 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Max extraction weight per time in grams
         /// </summary>
         public int MaxExtractWeightPerTime { get; set; } = 3500;
-
-        public string ID
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(Alias))
-                    return Alias;
-
-                if (!string.IsNullOrWhiteSpace(IpOrSerialAddress))
-                    return $"{IpOrSerialAddress}:{PortNumber}";
-
-                return Address;
-            }
-        }
     }
 }

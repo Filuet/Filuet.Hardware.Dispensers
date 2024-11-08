@@ -23,7 +23,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
 
         Task DispenseAsync(Cart cart);
-        void Unlock(params uint[] machines);
+        void Unlock(params int[] machines);
         Task TestAsync();
     }
 }
