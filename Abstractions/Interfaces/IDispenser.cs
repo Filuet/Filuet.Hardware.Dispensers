@@ -15,7 +15,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onAbandonment;
         event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         event EventHandler<DispenserTestEventArgs> onTest;
-        event EventHandler onReset;
+        event EventHandler<ResetEventArgs> onReset;
         event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 

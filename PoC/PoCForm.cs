@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
+using Microsoft.Azure.ServiceBus;
 
 namespace PoC
 {
@@ -225,13 +226,17 @@ namespace PoC
             foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 d.Unlock();
+                protoTextBox.AppendText($"{DateTime.Now:HH:mm:ss.fff}\t");
+                protoTextBox.AppendText($"Unlock Machine {d.Id}{Environment.NewLine}", Color.Green);
             }
         }
 
         private void resetButton_Click(object sender, EventArgs e) {
-            foreach (var x in dispensersListBox.SelectedItems) {
+           foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 d.Reset();
+                protoTextBox.AppendText($"{DateTime.Now:HH:mm:ss.fff}\t");
+                protoTextBox.AppendText($"Reset Machine {d.Id}{Environment.NewLine}", Color.Green);
             }
         }
 

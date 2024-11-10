@@ -6,6 +6,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
     {
         public int Id { get; set; }
         /// <summary>
+        /// The dispenser works in emulation mode
+        /// </summary>
+        public bool Emulation { get; set; } = false;
+        /// <summary>
         /// TCP: Ip address; Serial: 0x01 by default (all machines have 0x01 address cause we're separating them by serial ports)
         /// </summary>
         public string Address { get; set; } //= 0x01;

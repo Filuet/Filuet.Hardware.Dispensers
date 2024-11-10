@@ -1,6 +1,5 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
-using Filuet.Hardware.Dispensers.Core.Strategy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +25,6 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
-            DispensingChainBuilder chainBuilder,
             PoG planogram) {
             _dispensers = dispensers;
             _lightEmitters = lightEmitters;
@@ -39,26 +37,38 @@ namespace Filuet.Hardware.Dispensers.Core
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
                 d.onReset += (sender, e) => {
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
-                    PingRoutesAsync().RunSynchronously();
+                    PingRoutesAsync(e.MachineId).RunSynchronously();
                 };
                 d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
                 d.onAddressUnavailable += (sender, e) => {
-                    _planogram.SetAttributes(e.address, false);
-                    if (e.emptyBelt)
-                        _planogram.GetRoute(e.address).Quantity = 0;
-                    else _planogram.GetRoute(e.address).Active = false;
+                    PoGRoute route = _planogram.GetRoute(e.address);
+                    bool? formerValue = route.Active;
+                    int formerQty = route.Quantity;
 
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+                    string comment = null;
+
+                    _planogram.SetAttributes(e.address, false);
+                    if (e.emptyBelt) {
+                        _planogram.GetRoute(e.address).Quantity = 0;
+                        if (formerQty != 0)
+                            comment = $"Quantity changer from {formerQty} to 0";
+                    }
+                    else {
+                        _planogram.GetRoute(e.address).Active = false;
+                        if (!formerValue.HasValue || formerValue.Value)
+                            comment = "The route deactivated";
+                    }
+
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = comment, MachineId = d.Id });
                 };
             }
 
             foreach (ILightEmitter l in _lightEmitters)
                 l.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, e);
 
-            _chainBuilder = chainBuilder;
             _planogram = planogram;
 
-            TestAsync().ConfigureAwait(false);
+            Task.Delay(1000).ContinueWith(t => TestAsync().ConfigureAwait(false));
         }
 
         public async Task DispenseAsync(Cart cart) {
@@ -101,8 +111,8 @@ namespace Filuet.Hardware.Dispensers.Core
         public async Task TestAsync()
             => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray());
 
-        private async Task PingRoutesAsync()
-            => await Task.WhenAll(_dispensers.Select(x => x.TestAsync()).ToArray())
+        private async Task PingRoutesAsync(params int[] machines)
+            => await Task.WhenAll(_dispensers.Where(x => machines == null || machines.Contains(x.Id)).Select(x => x.TestAsync()).ToArray())
                 .ContinueWith(x => {
                     Parallel.ForEach(_dispensers, d => {
                         var pingResult = d.Ping(_planogram.Addresses.ToArray()).ToList();
@@ -111,7 +121,7 @@ namespace Filuet.Hardware.Dispensers.Core
                                 _planogram.SetAttributes(a.address, a.isActive.Value);
                     });
 
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = "Routes checked" });
                 });
 
         private bool PingRoute(string route) {
@@ -136,7 +146,6 @@ namespace Filuet.Hardware.Dispensers.Core
 
         internal readonly IEnumerable<IDispenser> _dispensers;
         internal readonly IEnumerable<ILightEmitter> _lightEmitters;
-        private readonly DispensingChainBuilder _chainBuilder;
         internal readonly PoG _planogram;
     }
 }

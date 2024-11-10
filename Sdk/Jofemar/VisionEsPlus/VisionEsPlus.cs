@@ -4,6 +4,7 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
 using Filuet.Infrastructure.Communication;
+using Microsoft.Azure.ServiceBus;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -41,9 +43,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         public int Id => _settings.Id;
 
-        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<PoG> getPlanogram) {
+        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<PoG> getPlanogram, VisionEsPlusEmulationCache emulatorCache = null) {
             _settings = settings;
             _getPlanogram = getPlanogram;
+            _emulatorCache = emulatorCache;
 
             if (_getPlanogram == null)
                 throw new ArgumentNullException("Planogram is mandatory");
@@ -59,20 +62,52 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         #region Actions
-        internal void ChangeLight(bool isOn)
-            => ExecuteCommand(ChangeLightCommand(isOn), $"Lights {(isOn ? "on" : "off")}", code => {
+        internal void ChangeLight(bool isOn) {
+            if (_settings.Emulation) {
+                onLightsChanged?.Invoke(this, isOn);
+                return;
+            }
+
+            runCommand(ChangeLightCommand(isOn), $"Lights are {(isOn ? "on" : "off")}", code => {
                 if (code == VisionEsPlusResponseCodes.Ok)
                     onLightsChanged?.Invoke(this, isOn); // Send an event to the business layer
             });
+        }
 
-        internal void Reset()
-            => ExecuteCommand(ResetCommand(), "Reset");
+        internal void Reset() {
+            if (_settings.Emulation) {
+                _emulatorCache.InvokeReboot();
+                onDataMoving?.Invoke(this, (true, $"Reboot Machine {Id}", "emulated"));
+                return;
+            }
 
-        internal void Unlock()
-            => ExecuteCommand(UnlockTheDoor(), "Unlock");
+            runCommand(ResetCommand(), "Reset");
+        }
 
-        internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> StatusAsync()
-            => await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
+        internal void Unlock() {
+            if (_settings.Emulation)
+                return;
+
+            runCommand(UnlockTheDoor(), "Unlock");
+        }
+
+        internal async Task<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?> StatusAsync() {
+            if (_settings.Emulation) {
+                if (_emulatorCache.IsDoorOpened())
+                    return (DispenserStateSeverity.MaintenanceService, VisionEsPlusResponseCodes.Unknown /* need to clarify*/, "the door is open");
+
+                if (_emulatorCache.IsRebooting())
+                    return (DispenserStateSeverity.Inoperable, VisionEsPlusResponseCodes.Unknown /* need to clarify*/, "inoperable");
+
+                (DispenserStateSeverity, VisionEsPlusResponseCodes, string)? state = _emulatorCache.GetState();
+                if (state != null)
+                    return state;
+
+                // idling
+                return (DispenserStateSeverity.Normal, VisionEsPlusResponseCodes.FaultIn485Bus, "connected");
+            }
+
+            return await Task.Factory.StartNew<(DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)?>(() =>
                 ExecuteCommand(StatusCommand(), "Status", (response, code) => {
                     switch (code) {
                         case VisionEsPlusResponseCodes.Unknown:
@@ -84,7 +119,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         default:
                             switch (TryGetDoorState(response)) {
                                 case DoorState.DoorClosed:
-                                    return (DispenserStateSeverity.Normal, code, "the door was closed");
+                                    return (DispenserStateSeverity.Normal, code, "the door is closed");
                                 case DoorState.DoorOpen:
                                     return (DispenserStateSeverity.MaintenanceService, code, "the door is open");
                                 case DoorState.Unknown:
@@ -93,6 +128,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                             }
                     }
                 }));
+        }            
 
         internal async Task<Cart> DispenseAsync(Cart cart) {
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await StatusAsync();
@@ -143,7 +179,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     return 0;
 
                 Slot current = slots.First();
-                if ((cart[current.Product] - 1) == 0 || slots.Where(x=>x.Product == current.Product).Count() == 1) // we won't be trying to dispense (or can't dispense) this product, so we can easily remove similar slots
+                if ((cart[current.Product] - 1) == 0 || slots.Where(x => x.Product == current.Product).Count() == 1) // we won't be trying to dispense (or can't dispense) this product, so we can easily remove similar slots
                     slots.RemoveAll(x => x.Product == current.Product);
 
                 // the first slot in the 'reconsidered' list is the one we need
@@ -278,7 +314,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         private void Dispense(EspBeltAddress address, bool lastCommand)
-            => ExecuteCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
+            => runCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
 
         internal bool? IsBeltActive(string route) {
             EspBeltAddress address = route;
@@ -438,12 +474,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             => response == null || (response != null && (response.Count > 10 || response.Count == 0)) ?
                 VisionEsPlusResponseCodes.Unknown : (VisionEsPlusResponseCodes)response[response.Count - 1];
 
-        private void ExecuteCommand(byte[] command, string message, Action<VisionEsPlusResponseCodes> postAction = null) {
+        private void runCommand(byte[] command, string message, Action<VisionEsPlusResponseCodes> postAction = null) {
             lock (_channel) {
                 byte[] response = null;
 
                 try {
-                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
+                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotiatorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
                 catch (SocketException) { }
@@ -487,5 +523,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         private readonly VisionEsPlusSettings _settings;
         private readonly byte[] _commandBody;
         private ICommunicationChannel _channel;
+        private VisionEsPlusEmulationCache _emulatorCache;
     }
 }

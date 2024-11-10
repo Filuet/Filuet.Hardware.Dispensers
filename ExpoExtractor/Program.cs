@@ -2,12 +2,14 @@ using ExpoExtractor;
 using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
-using Filuet.Hardware.Dispensers.Core.Strategy;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication;
 using Filuet.Infrastructure.Communication;
+using Filuet.Infrastructure.DataProvider.Interfaces;
+using Filuet.Infrastructure.DataProvider;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,21 +27,22 @@ builder.Services.AddSwaggerGen();
 
 PoG planogram = PoG.Read(File.ReadAllText("test_planogram.json"));
 builder.Services.AddSingleton(planogram)
+    .AddSingleton<IMemoryCachingService, MemoryCachingService>()
     .AddVendingMachine(sp => {
         ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
         IVendingMachine vendingMachine = new VendingMachineBuilder()
-            .AddChainBuilder(new DispensingChainBuilder(sp.GetRequiredService<PoG>()))
             .AddDispensers(() => {
                 string jsonSettings = File.ReadAllText("dispensing_settings.json");
                 var machineSettings = JsonSerializer.Deserialize<IEnumerable<VisionEsPlusSettings>>(jsonSettings);
                 List<IDispenser> result = new List<IDispenser>();
-                int id = 0;
-                foreach (var curSettings in machineSettings) {
-                    ICommunicationChannel channel = curSettings.IpOrSerialAddress.Contains("COM") ?
-                        new EspSerialChannel(s => { s.PortName = curSettings.IpOrSerialAddress; }) :
-                        new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(curSettings.IpOrSerialAddress), curSettings.PortNumber); });
+                
+                foreach (var settings in machineSettings) {
+                    ICommunicationChannel channel = settings.IpOrSerialAddress.Contains("COM") ?
+                        new EspSerialChannel(s => { s.PortName = settings.IpOrSerialAddress; }) :
+                        new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings.IpOrSerialAddress), settings.PortNumber); });
 
-                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper(new VisionEsPlus(channel, curSettings, () => sp.GetService<PoG>()));
+                    VisionEsPlusEmulationCache emulatorCache = settings.Emulation ? new VisionEsPlusEmulationCache(sp.GetRequiredService<IMemoryCachingService>().Get($"MachineEmulator{settings.Id}", 1)) : null;
+                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper(new VisionEsPlus(channel, settings, () => sp.GetService<PoG>(), emulatorCache));
                     result.Add(machine);
                     integratedEmitters.Add(machine);
                 }

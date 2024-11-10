@@ -18,7 +18,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<DispenserTestEventArgs> onTest;
-        public event EventHandler onReset;
+        public event EventHandler<ResetEventArgs> onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
@@ -75,11 +75,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public async Task Reset() {
             _machineAdapter.Reset();
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = null;
-            while (state == null || state.Value.state == DispenserStateSeverity.Inoperable) {
-                Thread.Sleep(3000);
-                state = await _machineAdapter.StatusAsync();
-            }
-            onReset?.Invoke(this, null);
+
+            await Task.Run(async () => {
+                while (state == null || state.Value.state == DispenserStateSeverity.Inoperable) {
+                    Thread.Sleep(3000);
+                    state = await _machineAdapter.StatusAsync();
+                }
+                onReset?.Invoke(this, new ResetEventArgs { MachineId = _machineAdapter.Id });
+            });
         }
 
         public void Unlock()

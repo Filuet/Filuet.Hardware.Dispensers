@@ -1,6 +1,7 @@
 [
 	{
 		"Id": 1,
+		"Emulation": true,
 		"PortNumber": 5050,
 		"Address": "0x01",
 		"IpOrSerialAddress": "COM11",
@@ -12,6 +13,7 @@
 	},
 	{
 		"Id": 2,
+		"Emulation": true,
 		"PortNumber": 5050,
 		"Address": "0x01",
 		"IpOrSerialAddress": "COM9",

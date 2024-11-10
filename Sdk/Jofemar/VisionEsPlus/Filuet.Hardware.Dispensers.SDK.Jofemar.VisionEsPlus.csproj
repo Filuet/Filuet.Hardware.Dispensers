@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Filuet.Infrastructure.Abstractions" Version="1.0.20" />
+    <PackageReference Include="Filuet.Infrastructure.Abstractions" Version="1.0.100" />
     <PackageReference Include="Filuet.Infrastructure.Communication" Version="1.0.14" />
+    <PackageReference Include="Filuet.Infrastructure.DataProvider" Version="1.0.13" />
   </ItemGroup>
 
   <ItemGroup>
