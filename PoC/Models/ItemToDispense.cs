@@ -4,7 +4,7 @@ namespace PoC.Models
 {
     public class ItemToDispense
     {
-        public PoGProduct Product { get; set; }
+        public PogProduct Product { get; set; }
         public ushort Qty { get; set; }
 
         public override string ToString() => $"{Product?.Product}x{Qty}";

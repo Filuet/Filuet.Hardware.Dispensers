@@ -9,7 +9,6 @@ using Filuet.Infrastructure.DataProvider.Interfaces;
 using Filuet.Infrastructure.DataProvider;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +24,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-PoG planogram = PoG.Read(File.ReadAllText("test_planogram.json"));
+string planogramAddress = "test_planogram.json";
+
+Pog planogram = Pog.Read(File.ReadAllText(planogramAddress));
 builder.Services.AddSingleton(planogram)
     .AddSingleton<IMemoryCachingService, MemoryCachingService>()
     .AddVendingMachine(sp => {
@@ -42,7 +43,7 @@ builder.Services.AddSingleton(planogram)
                         new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings.IpOrSerialAddress), settings.PortNumber); });
 
                     VisionEsPlusEmulationCache emulatorCache = settings.Emulation ? new VisionEsPlusEmulationCache(sp.GetRequiredService<IMemoryCachingService>().Get($"MachineEmulator{settings.Id}", 1)) : null;
-                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper(new VisionEsPlus(channel, settings, () => sp.GetService<PoG>(), emulatorCache));
+                    VisionEsPlusWrapper machine = new VisionEsPlusWrapper(new VisionEsPlus(channel, settings, () => sp.GetService<Pog>(), emulatorCache));
                     result.Add(machine);
                     integratedEmitters.Add(machine);
                 }
@@ -50,7 +51,7 @@ builder.Services.AddSingleton(planogram)
                 return result;
             })
             .AddLightEmitters(() => integratedEmitters)
-            .AddPlanogram(sp.GetRequiredService<PoG>())
+            .AddPlanogram(sp.GetRequiredService<Pog>())
             .Build();
 
         vendingMachine.onDispensing += (sender, e) => {
@@ -81,19 +82,12 @@ builder.Services.AddSingleton(planogram)
         };
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) => {
-            PoG planogram = sp.GetRequiredService<PoG>();
-            
-            foreach (var a in e)
-                planogram.GetRoute(a.address).Quantity--;
-
-            planogram.Write("test_planogram.json");
-
             StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" };
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
         };
 
         vendingMachine.onPlanogramClarification += (sender, e) => {
-            e.Planogram.Write("test_planogram.json");
+            e.Planogram.Write(planogramAddress);
             //form.Planogram = e.Planogram;
             //form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");
         };

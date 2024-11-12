@@ -27,7 +27,7 @@ namespace PoC
             PoCForm form = new PoCForm();
 
             form.Show();
-            PoG planogram = PoG.Read(File.ReadAllText("test_planogram.json"));
+            Pog planogram = Pog.Read(File.ReadAllText("test_planogram.json"));
 
             IServiceProvider sp = new ServiceCollection()
                 .AddSingleton(planogram)
@@ -54,7 +54,7 @@ namespace PoC
                             // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings1.IpOrSerialAddress), settings1.PortNumber); });
 
                             VisionEsPlusEmulationCache emulatorCache1 = settings1.Emulation ? new VisionEsPlusEmulationCache(sp.GetRequiredService<IMemoryCachingService>().Get($"MachineEmulator1", 1)) : null;
-                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(new VisionEsPlus(channel1, settings1, () => sp.GetService<PoG>(), emulatorCache1));
+                            VisionEsPlusWrapper machine1 = new VisionEsPlusWrapper(new VisionEsPlus(channel1, settings1, () => sp.GetService<Pog>(), emulatorCache1));
                             result.Add(machine1);
                             integratedEmitters.Add(machine1);
                             #endregion
@@ -74,7 +74,7 @@ namespace PoC
                             ICommunicationChannel channel2 = new EspSerialChannel(s => { s.PortName = settings2.IpOrSerialAddress; }); // new EspTcpChannel(s => { s.Endpoint = new IPEndPoint(IPAddress.Parse(settings2.IpOrSerialAddress), settings2.PortNumber); });
 
                             VisionEsPlusEmulationCache emulatorCache2 = settings2.Emulation ? new VisionEsPlusEmulationCache(sp.GetRequiredService<IMemoryCachingService>().Get($"MachineEmulator2", 1)) : null;
-                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(new VisionEsPlus(channel2, settings2, () => sp.GetService<PoG>(), emulatorCache2));
+                            VisionEsPlusWrapper machine2 = new VisionEsPlusWrapper(new VisionEsPlus(channel2, settings2, () => sp.GetService<Pog>(), emulatorCache2));
                             result.Add(machine2);
                             integratedEmitters.Add(machine2);
                             #endregion
@@ -82,7 +82,7 @@ namespace PoC
                             return result;
                         })
                         .AddLightEmitters(() => integratedEmitters)
-                        .AddPlanogram(sp.GetRequiredService<PoG>())
+                        .AddPlanogram(sp.GetRequiredService<Pog>())
                         .Build();
 
                     vendingMachine.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is started {e.address}");
@@ -93,6 +93,7 @@ namespace PoC
                     vendingMachine.onPlanogramClarification += (sender, e) => {
                         form.Planogram = e.Planogram;
                         form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Comment ?? "The planogram refreshed");
+                        e.Planogram.Write("test_planogram.json");
                     };
 
                     // vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Message);
@@ -101,7 +102,7 @@ namespace PoC
                 }, null)
                 .BuildServiceProvider();
 
-            form.Initialize(sp.GetRequiredService<PoG>(), sp.GetRequiredService<IVendingMachine>());
+            form.Initialize(sp.GetRequiredService<Pog>(), sp.GetRequiredService<IVendingMachine>());
 
             Application.Run(form);
         }

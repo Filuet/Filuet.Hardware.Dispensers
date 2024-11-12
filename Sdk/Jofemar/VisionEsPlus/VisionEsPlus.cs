@@ -4,7 +4,6 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Models;
 using Filuet.Infrastructure.Communication;
-using Microsoft.Azure.ServiceBus;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +12,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
@@ -43,7 +41,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         public int Id => _settings.Id;
 
-        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<PoG> getPlanogram, VisionEsPlusEmulationCache emulatorCache = null) {
+        public VisionEsPlus(ICommunicationChannel channel, VisionEsPlusSettings settings, Func<Pog> getPlanogram, VisionEsPlusEmulationCache emulatorCache = null) {
             _settings = settings;
             _getPlanogram = getPlanogram;
             _emulatorCache = emulatorCache;
@@ -85,8 +83,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         }
 
         internal void Unlock() {
-            if (_settings.Emulation)
+            if (_settings.Emulation) {
+                _emulatorCache.InvokeUnlock();
+                onDataMoving?.Invoke(this, (true, $"Unlock lift Machine {Id}", "emulated"));
                 return;
+            }
 
             runCommand(UnlockTheDoor(), "Unlock");
         }
@@ -98,6 +99,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 if (_emulatorCache.IsRebooting())
                     return (DispenserStateSeverity.Inoperable, VisionEsPlusResponseCodes.Unknown /* need to clarify*/, "inoperable");
+
+                if (_emulatorCache.IsUnlocked())
+                    return (DispenserStateSeverity.Inoperable, VisionEsPlusResponseCodes.Unknown /* need to clarify*/, "the elevator is open");
+
+                if (_emulatorCache.IsDispensing())
+                    return (DispenserStateSeverity.NeedToWait, VisionEsPlusResponseCodes.Busy /* need to clarify*/, "the elevator is open");
 
                 (DispenserStateSeverity, VisionEsPlusResponseCodes, string)? state = _emulatorCache.GetState();
                 if (state != null)
@@ -148,10 +155,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <returns></returns>
         private async Task<Cart> DispenseSessionAsync(Cart cart, bool retry = false) {
             Func<int, List<Slot>> _rebuildSlotChain = minTray => { // as soon as we can only ascend to get products we have to exclude lower trays
-                PoG planogram = _calcPlanogram();
+                Pog planogram = _calcPlanogram();
                 // all active and not empty routes of the current machine with the cart products
                 Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = planogram.Products.Where(x => cart.Products.Contains(x.Product))
-                    .Select(x => new KeyValuePair<string, IEnumerable<PoGRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (retry ? 0 : 1))))
+                    .Select(x => new KeyValuePair<string, IEnumerable<PogRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (retry ? 0 : 1))))
                     .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Product = planogram[y.Address].Product }));
 
                 // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
@@ -313,14 +320,35 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             return cart;
         }
 
-        private void Dispense(EspBeltAddress address, bool lastCommand)
-            => runCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
+        private void Dispense(EspBeltAddress address, bool lastCommand) {
+            if (_settings.Emulation) {
+                _emulatorCache.InvokeDispense();
+
+                Pog p = _getPlanogram();
+                PogRoute route = p.GetRoute(address);
+                if (route.MockedQuantity < 1)
+                    _emulatorCache.RaiseEmptyBelt(address);
+                else if (route.MockedActive.HasValue && route.MockedActive.Value)
+                    _emulatorCache.RaiseInvalidAddress(address);
+
+                onDataMoving?.Invoke(this, (true, $"Dispense from {address}", "emulated"));
+                return;
+            }
+
+            runCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
+        }
 
         internal bool? IsBeltActive(string route) {
             EspBeltAddress address = route;
 
             if (address.Machine != Id) // The route belongs to another machine
                 return null;
+
+            if (_settings.Emulation) {
+                bool isActive = _planogram.GetRoute(route).MockedActive;
+                onDataMoving?.Invoke(this, (true, $"Check belt {route}", "emulated"));
+                return isActive;
+            }
 
             return ExecuteCommand(CheckChannelCommand(address.Tray, address.Belt), "CheckBelt", (response, code) =>
                 response.Length == 8 && (response[4] == 0x43 || response[4] == 0x41)); // 0x44 means bealt is unavailable
@@ -512,14 +540,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         private string _bitConvert(byte[] data) => BitConverter.ToString(data).Replace('-', ' ');
 
-        private PoG _calcPlanogram() {
-            PoG fullPlanogram = _getPlanogram?.Invoke();
+        private Pog _calcPlanogram() {
+            Pog fullPlanogram = _getPlanogram?.Invoke();
             return fullPlanogram.GetPartialPlanogram(x => ((EspBeltAddress)x).Machine == Id);
         }
         #endregion
 
-        private readonly Func<PoG> _getPlanogram;
-        private readonly PoG _planogram;
+        private readonly Func<Pog> _getPlanogram;
+        private readonly Pog _planogram;
         private readonly VisionEsPlusSettings _settings;
         private readonly byte[] _commandBody;
         private ICommunicationChannel _channel;

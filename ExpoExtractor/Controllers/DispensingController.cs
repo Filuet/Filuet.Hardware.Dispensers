@@ -14,7 +14,7 @@ namespace ExpoExtractor.Controllers
     [Route("dispensing")]
     public class DispensingController : ControllerBase
     {
-        public DispensingController(IVendingMachine vendingMachine, PoG planogram, ILogger<DispensingController> logger) {
+        public DispensingController(IVendingMachine vendingMachine, Pog planogram, ILogger<DispensingController> logger) {
             _vendingMachine = vendingMachine;
             _planogram = planogram;
             _logger = logger;
@@ -77,7 +77,7 @@ namespace ExpoExtractor.Controllers
             => _vendingMachine.Unlock(machine);
 
         private readonly IVendingMachine _vendingMachine;
-        private readonly PoG _planogram;
+        private readonly Pog _planogram;
         private List<MachineTestResult> _message;
         private readonly ILogger<DispensingController> _logger;
     }

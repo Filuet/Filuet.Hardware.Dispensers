@@ -24,7 +24,7 @@ namespace Filuet.Hardware.Dispensers.Core
             return this;
         }
 
-        public VendingMachineBuilder AddPlanogram(PoG planogram)
+        public VendingMachineBuilder AddPlanogram(Pog planogram)
         {
             _planogram = planogram;
             return this;
@@ -35,6 +35,6 @@ namespace Filuet.Hardware.Dispensers.Core
 
         private IEnumerable<IDispenser> _dispensers;
         private IEnumerable<ILightEmitter> _lightEmitters;
-        private PoG _planogram;
+        private Pog _planogram;
     }
 }

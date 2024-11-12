@@ -5,7 +5,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
 {
     public class PlanogramEventArgs : EventArgs
     {
-        public PoG Planogram { get; set; }
+        public Pog Planogram { get; set; }
 
         public int MachineId { get; set; }
 

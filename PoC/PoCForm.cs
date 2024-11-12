@@ -33,7 +33,7 @@ namespace PoC
             planogramTreeView.NodeMouseClick += (sender, args) => planogramTreeView.SelectedNode = args.Node;
         }
 
-        public void Initialize(PoG planogram, IVendingMachine dispenser) {
+        public void Initialize(Pog planogram, IVendingMachine dispenser) {
             _planogram = planogram;
             _dispenser = dispenser;
 
@@ -103,7 +103,7 @@ namespace PoC
         }
 
         private void addSkuButton_Click(object sender, EventArgs e) {
-            PoGProduct product = skuComboBox.SelectedItem as PoGProduct;
+            PogProduct product = skuComboBox.SelectedItem as PogProduct;
             ushort qty = (ushort)qtyNumericUpDown.Value;
 
             bool alreadyExists = false;
@@ -200,7 +200,7 @@ namespace PoC
             }
         }
 
-        internal PoG Planogram
+        internal Pog Planogram
         {
             get => _planogram;
             set
@@ -263,15 +263,15 @@ namespace PoC
                 contextMenuStrip1.Show(MousePosition);
         }
 
-        private PoGRoute SelectedRoute
+        private PogRoute SelectedRoute
         {
             get
             {
                 if (planogramTreeView.SelectedNode != null) {
                     object tag = planogramTreeView.SelectedNode.Tag;
 
-                    if (tag != null && tag is PoGRoute)
-                        return (PoGRoute)tag;
+                    if (tag != null && tag is PogRoute)
+                        return (PogRoute)tag;
                 }
 
                 return null;
@@ -284,7 +284,7 @@ namespace PoC
                 foreach (var r in result)
                     if (r.isActive.HasValue) {
                         _planogram.GetRoute(r.address).Active = r.isActive.Value;
-                        PoGRoute a = SelectedRoute;
+                        PogRoute a = SelectedRoute;
                         planogramTreeView.SelectedNode.Text = $"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}";
                     }
             }
@@ -292,7 +292,7 @@ namespace PoC
 
         private Dictionary<int, bool> MachineIdIsAvailable = new Dictionary<int, bool>();
         private IVendingMachine _dispenser;
-        private PoG _planogram;
+        private Pog _planogram;
         private VendingMachine _factDispenser;
 
         private void activateToolStripMenuItem_Click(object sender, EventArgs e) {

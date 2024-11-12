@@ -12,11 +12,11 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// <summary>
     /// Planogram
     /// </summary>
-    public class PoG
+    public class Pog
     {
         public const int DEFAULT_PRODUCT_WEIGHT_GR = 500;
 
-        public PoGProduct this[string productOrAddress]
+        public PogProduct this[string productOrAddress]
         {
             get
             {
@@ -28,17 +28,17 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             }
         }
 
-        public PoGRoute GetRoute(string address)
+        public PogRoute GetRoute(string address)
             => Products.SelectMany(x => x.Routes).FirstOrDefault(x => address == x.Address);
 
-        public IEnumerable<PoGRoute> GetRoutes(IEnumerable<string> addresses)
+        public IEnumerable<PogRoute> GetRoutes(IEnumerable<string> addresses)
             => Products.SelectMany(x => x.Routes).Where(x => addresses.Any(r => r == x.Address));
 
-        public PoGProduct GetProduct(string address)
+        public PogProduct GetProduct(string address)
             => Products.FirstOrDefault(x => x.Addresses.Contains(address));
 
         [JsonPropertyName("products")]
-        public ICollection<PoGProduct> Products { get; set; }
+        public ICollection<PogProduct> Products { get; set; }
 
         [JsonIgnore]
         public IEnumerable<string> Addresses => Products?.SelectMany(x => x.Routes.Select(r => r.Address)).OrderBy(x => x.Length).ThenBy(x => x).ToList();
@@ -46,10 +46,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonIgnore]
         public IEnumerable<string> ActiveAddresses => Products?.SelectMany(x => x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => r.Address)).OrderBy(x => x.Length).ThenBy(x => x).ToList();
 
-        public static PoG Read(string serialized) {
+        public static Pog Read(string serialized) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
-            return new PoG { Products = JsonSerializer.Deserialize<List<PoGProduct>>(serialized, options) };
+            return new Pog { Products = JsonSerializer.Deserialize<List<PogProduct>>(serialized, options) };
         }
 
         public void Write(string path) {
@@ -58,7 +58,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             File.WriteAllText(path, JsonSerializer.Serialize(Products, options));
         }
 
-        public void UpdateRoute(PoGRoute route, string productUid) {
+        public void UpdateRoute(PogRoute route, string productUid) {
             if (string.IsNullOrWhiteSpace(productUid))
                 throw new ArgumentException("Product UID is mandatory");
 
@@ -69,10 +69,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 
             bool needToAdd = true;
 
-            List<PoGProduct> toRemove = new List<PoGProduct>();
+            List<PogProduct> toRemove = new List<PogProduct>();
 
             foreach (var p in Products) {
-                PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
+                PogRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
                 if (existedRoute != null) {
                     if (string.Equals(p.Product, productUid, StringComparison.InvariantCultureIgnoreCase)) {
                         existedRoute.Quantity = route.Quantity;
@@ -91,20 +91,20 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             }
 
             if (needToAdd) {
-                PoGProduct p = this[productUid];
+                PogProduct p = this[productUid];
                 if (p != null)
                     p.Routes.Add(route);
-                else Products.Add(new PoGProduct { Product = productUid, Routes = new List<PoGRoute> { route } });
+                else Products.Add(new PogProduct { Product = productUid, Routes = new List<PogRoute> { route } });
             }
 
             foreach (var p in toRemove)
                 Products.Remove(p);
         }
 
-        public void RemoveRoute(PoGRoute route) {
-            PoGProduct toDelete = null;
+        public void RemoveRoute(PogRoute route) {
+            PogProduct toDelete = null;
             foreach (var p in Products) {
-                PoGRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
+                PogRoute existedRoute = p.Routes.FirstOrDefault(x => x.Address == route.Address);
                 if (existedRoute != null) {
                     p.Routes.Remove(existedRoute);
                     if (p.Routes.Count == 0)
@@ -133,21 +133,21 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public int GetProductWeight(string productUid) =>
             this[productUid]?.Weight ?? DEFAULT_PRODUCT_WEIGHT_GR;
 
-        public PoG GetPartialPlanogram(Func<string, bool> isAddressValid) {
-            PoG result = new PoG();
+        public Pog GetPartialPlanogram(Func<string, bool> isAddressValid) {
+            Pog result = new Pog();
             foreach (var p in Products) {
                 foreach (var r in p.Routes) {
                     if (isAddressValid(r.Address)) {
-                        PoGProduct product = result.Products.FirstOrDefault(x => x.Product == p.Product);
+                        PogProduct product = result.Products.FirstOrDefault(x => x.Product == p.Product);
                         if (product == null) {
-                            product = new PoGProduct {
+                            product = new PogProduct {
                                 Product = p.Product,
                                 Weight = p.Weight
                             };
                             result.Products.Add(product);
                         }
 
-                        product.Routes.Add(new PoGRoute { Active = r.Active, Address = r.Address, MaxQuantity = r.MaxQuantity, Quantity = r.Quantity});
+                        product.Routes.Add(new PogRoute { Active = r.Active, Address = r.Address, MaxQuantity = r.MaxQuantity, Quantity = r.Quantity });
                     }
                 }
             }
@@ -162,13 +162,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         }
     }
 
-    public class PoGProduct
+    public class PogProduct
     {
         [JsonPropertyName("product")]
         public string Product { get; set; }
 
         [JsonPropertyName("routes")]
-        public ICollection<PoGRoute> Routes { get; set; }
+        public ICollection<PogRoute> Routes { get; set; }
 
         [JsonPropertyName("weight")]
         public int Weight { get; set; }
@@ -185,7 +185,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public override string ToString() => Product;
     }
 
-    public class PoGRoute
+    public class PogRoute : PogRouteMock
     {
         [JsonPropertyName("r")]
         public string Address { get; set; }
@@ -203,12 +203,29 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         [JsonIgnore]
         public IDispenser Dispenser { get; set; }
 
+        [JsonIgnore]
         /// <summary>
         /// Crutch
         /// </summary>
         /// <returns></returns>
         public uint DispenserId => uint.Parse(Address.Substring(0, Address.IndexOf('/')));
 
-        public override string ToString() => $"{Address}: {Quantity}";
+        public override string ToString()
+            => $"{Address}: {Quantity}";
+    }
+
+    public abstract class PogRouteMock
+    {
+        /// <summary>
+        /// Real quantity
+        /// </summary>
+        [JsonPropertyName("mock_q")]
+        public ushort? MockedQuantity { get; set; } = null;
+
+        /// <summary>
+        /// Is physically active
+        /// </summary>
+        [JsonPropertyName("mock_a")]
+        public bool? MockedActive { get; set; } = true;
     }
 }

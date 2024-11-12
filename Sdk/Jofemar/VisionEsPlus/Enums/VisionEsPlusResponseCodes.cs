@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums
+﻿namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums
 {
     public enum VisionEsPlusResponseCodes : byte
     {

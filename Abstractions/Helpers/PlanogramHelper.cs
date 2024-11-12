@@ -11,7 +11,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Helpers
         /// <param name="planogram"></param>
         /// <param name="thresholdPercent">Product is considered as running low under or equal this value</param>
         /// <returns>List of product identifiers (sku)</returns>
-        public static IEnumerable<(string productUid, int count, int maxCount)> GetStock(this PoG planogram) {
+        public static IEnumerable<(string productUid, int count, int maxCount)> GetStock(this Pog planogram) {
             foreach (var product in planogram.Products)
                 yield return (product.Product, product.Quantity, product.MaxQuantity);
         }

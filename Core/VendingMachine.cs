@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 [assembly: InternalsVisibleTo("PoC")]
 
@@ -25,7 +26,7 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
-            PoG planogram) {
+            Pog planogram) {
             _dispensers = dispensers;
             _lightEmitters = lightEmitters;
 
@@ -39,9 +40,19 @@ namespace Filuet.Hardware.Dispensers.Core
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutesAsync(e.MachineId).RunSynchronously();
                 };
-                d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
+                d.onWaitingProductsToBeRemoved += (sender, e) => {
+                    foreach (var a in e) {
+                        PogRoute r = _planogram.GetRoute(a.address);
+                        r.Quantity--;
+                        if (r.MockedQuantity.HasValue) // emulation
+                            r.MockedQuantity--;
+                    }
+
+                    onWaitingProductsToBeRemoved?.Invoke(sender, e);
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = comment, MachineId = d.Id });
+                };
                 d.onAddressUnavailable += (sender, e) => {
-                    PoGRoute route = _planogram.GetRoute(e.address);
+                    PogRoute route = _planogram.GetRoute(e.address);
                     bool? formerValue = route.Active;
                     int formerQty = route.Quantity;
 
@@ -49,12 +60,18 @@ namespace Filuet.Hardware.Dispensers.Core
 
                     _planogram.SetAttributes(e.address, false);
                     if (e.emptyBelt) {
-                        _planogram.GetRoute(e.address).Quantity = 0;
+                        route.Quantity = 0;
+                        if (route.MockedQuantity.HasValue) // emulation
+                            route.MockedQuantity = 0;
+
                         if (formerQty != 0)
-                            comment = $"Quantity changer from {formerQty} to 0";
+                            comment = $"Quantity changed from {formerQty} to 0";
                     }
                     else {
-                        _planogram.GetRoute(e.address).Active = false;
+                        route.Active = false;
+                        if (route.MockedActive.HasValue) // emulation
+                            route.MockedActive = false;
+
                         if (!formerValue.HasValue || formerValue.Value)
                             comment = "The route deactivated";
                     }
@@ -69,6 +86,7 @@ namespace Filuet.Hardware.Dispensers.Core
             _planogram = planogram;
 
             Task.Delay(1000).ContinueWith(t => TestAsync().ConfigureAwait(false));
+            PingRoutesAsync(_dispensers.Select(x => x.Id).ToArray()).ConfigureAwait(false);
         }
 
         public async Task DispenseAsync(Cart cart) {
@@ -80,7 +98,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 List<(IDispenser dispenser, int qty)> dispenserRank = new List<(IDispenser, int)>();
 
                 foreach (var d in dispensers) {
-                    IEnumerable<PoGRoute> candidates = _planogram.Products.Where(x => cart.Products.Contains(x.Product)).SelectMany(x => x.Routes).Where(x => d.Id == x.DispenserId);
+                    IEnumerable<PogRoute> candidates = _planogram.Products.Where(x => cart.Products.Contains(x.Product)).SelectMany(x => x.Routes).Where(x => d.Id == x.DispenserId);
                     int qty = candidates.Sum(x => x.Quantity);
                     if (qty > 0)
                         dispenserRank.Add((d, qty));
@@ -146,6 +164,6 @@ namespace Filuet.Hardware.Dispensers.Core
 
         internal readonly IEnumerable<IDispenser> _dispensers;
         internal readonly IEnumerable<ILightEmitter> _lightEmitters;
-        internal readonly PoG _planogram;
+        internal readonly Pog _planogram;
     }
 }

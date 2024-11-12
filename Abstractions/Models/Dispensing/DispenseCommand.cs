@@ -7,7 +7,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     /// </summary>
     public class DispenseCommand
     {
-        public PoGRoute Route { get; private set; }
+        public PogRoute Route { get; private set; }
 
         public ushort Quantity { get; private set; }
 
@@ -17,7 +17,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         /// <param name="route"></param>
         /// <param name="quantity">Quantity to be extracted</param>
         /// <returns></returns>
-        public static DispenseCommand Create(PoGRoute route, ushort quantity)
+        public static DispenseCommand Create(PogRoute route, ushort quantity)
         {
             if (quantity == 0)
                 throw new ArgumentException("Quantity to dispense is mandatory");
