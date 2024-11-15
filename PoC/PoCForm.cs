@@ -12,7 +12,6 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
-using Microsoft.Azure.ServiceBus;
 
 namespace PoC
 {
@@ -83,11 +82,37 @@ namespace PoC
 
             foreach (var p in _planogram.Products) {
                 TreeNode product = new TreeNode(p.Product) { Tag = p };
+                product.NodeFont = new Font("Segoe UI", 8, FontStyle.Bold);
                 planogramTreeView.Nodes.Add(product);
                 foreach (var a in p.Routes) {
-                    product.Nodes.Add(new TreeNode($"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}") { Tag = a });
+                    TreeNode node = new TreeNode($"{a.Address} ({a.Quantity}/{a.MaxQuantity}{(a.MockedQuantity.HasValue && a.MockedQuantity.Value != a.Quantity ? ", real qty: " + a.MockedQuantity.Value : "")})".Trim()) { Tag = a };
+
+                    if (!a.Active.HasValue) {
+                        if (a.MockedActive.HasValue) {
+                            node.ImageIndex = a.MockedActive.Value ? 8 : 9;
+                        }
+                        else node.ImageIndex = 3;
+                    }
+                    else {
+                        if (a.Active.Value) {
+                            if (a.MockedActive.HasValue) {
+                                node.ImageIndex = a.MockedActive.Value ? 1 : 4;
+                            }
+                            else node.ImageIndex = 6;
+                        }
+                        else {
+                            if (a.MockedActive.HasValue) {
+                                node.ImageIndex = a.MockedActive.Value ? 5 : 2;
+                            }
+                            else node.ImageIndex = 7;
+                        }
+                    }
+
+                    product.Nodes.Add(node);
                 }
             }
+
+            planogramTreeView.ExpandAll();
         }
 
         private void _dispenser_onPlanogramClarification(object sender, PlanogramEventArgs e) {
@@ -232,7 +257,7 @@ namespace PoC
         }
 
         private void resetButton_Click(object sender, EventArgs e) {
-           foreach (var x in dispensersListBox.SelectedItems) {
+            foreach (var x in dispensersListBox.SelectedItems) {
                 IDispenser d = (IDispenser)x;
                 d.Reset();
                 protoTextBox.AppendText($"{DateTime.Now:HH:mm:ss.fff}\t");
@@ -259,8 +284,18 @@ namespace PoC
         }
 
         private void planogramTreeView_MouseClick(object sender, MouseEventArgs e) {
-            if (SelectedRoute != null && e.Button == MouseButtons.Right)
+            PogRoute route = SelectedRoute;
+            if (route != null && e.Button == MouseButtons.Right) {
+                if (!route.Active.HasValue) {
+                    activateToolStripMenuItem.Enabled = true;
+                    deactivateToolStripMenuItem.Enabled = true;
+                }
+                else {
+                    activateToolStripMenuItem.Enabled = !route.Active.Value;
+                    deactivateToolStripMenuItem.Enabled = route.Active.Value;
+                }
                 contextMenuStrip1.Show(MousePosition);
+            }
         }
 
         private PogRoute SelectedRoute
@@ -284,21 +319,31 @@ namespace PoC
                 foreach (var r in result)
                     if (r.isActive.HasValue) {
                         _planogram.GetRoute(r.address).Active = r.isActive.Value;
-                        PogRoute a = SelectedRoute;
-                        planogramTreeView.SelectedNode.Text = $"{a.Address} qty={a.Quantity} {(!a.Active.HasValue ? "unknown" : (a.Active.Value ? "active" : "inactive"))}";
+                        PopulatePlanogramTreeView();
+                        //PogRoute a = SelectedRoute;
+                        //planogramTreeView.SelectedNode.Text = $"{a.Address} ({a.Quantity}/{a.MaxQuantity}{(a.MockedQuantity.HasValue && a.MockedQuantity.Value != a.Quantity ? ", real qty: " + a.MockedQuantity.Value : "")})".Trim();
                     }
             }
         }
 
+        private void activateToolStripMenuItem_Click(object sender, EventArgs e) {
+            PogRoute route = SelectedRoute;
+            _planogram.GetRoute(route.Address).Active = true;
+            _planogram.Write(PLANOGRAM_FILE);
+            PopulatePlanogramTreeView();
+        }
+
+        private void deactivateToolStripMenuItem_Click(object sender, EventArgs e) {
+            PogRoute route = SelectedRoute;
+            _planogram.GetRoute(route.Address).Active = false;
+            _planogram.Write(PLANOGRAM_FILE);
+            PopulatePlanogramTreeView();
+        }
+
+        const string PLANOGRAM_FILE = "C:/Filuet/Dispensing/test_planogram.json";
         private Dictionary<int, bool> MachineIdIsAvailable = new Dictionary<int, bool>();
         private IVendingMachine _dispenser;
         private Pog _planogram;
         private VendingMachine _factDispenser;
-
-        private void activateToolStripMenuItem_Click(object sender, EventArgs e) {
-            foreach (var d in _factDispenser._dispensers) {
-                d.ActivateAsync(SelectedRoute.Address);
-            }
-        }
     }
 }

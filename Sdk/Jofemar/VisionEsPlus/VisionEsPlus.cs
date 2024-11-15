@@ -324,7 +324,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             if (_settings.Emulation) {
                 _emulatorCache.InvokeDispense();
 
-                Pog p = _getPlanogram();
+                Pog p = _calcPlanogram();
                 PogRoute route = p.GetRoute(address);
                 if (route.MockedQuantity < 1)
                     _emulatorCache.RaiseEmptyBelt(address);
@@ -345,7 +345,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 return null;
 
             if (_settings.Emulation) {
-                bool isActive = _planogram.GetRoute(route).MockedActive;
+                Pog p = _calcPlanogram();
+                bool? isActive = p.GetRoute(route).MockedActive;
                 onDataMoving?.Invoke(this, (true, $"Check belt {route}", "emulated"));
                 return isActive;
             }

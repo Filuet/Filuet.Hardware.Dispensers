@@ -134,7 +134,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             this[productUid]?.Weight ?? DEFAULT_PRODUCT_WEIGHT_GR;
 
         public Pog GetPartialPlanogram(Func<string, bool> isAddressValid) {
-            Pog result = new Pog();
+            Pog result = new Pog { Products = new List<PogProduct>() };
             foreach (var p in Products) {
                 foreach (var r in p.Routes) {
                     if (isAddressValid(r.Address)) {
@@ -142,12 +142,20 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
                         if (product == null) {
                             product = new PogProduct {
                                 Product = p.Product,
-                                Weight = p.Weight
+                                Weight = p.Weight,
+                                Routes = new List<PogRoute>()
                             };
                             result.Products.Add(product);
                         }
 
-                        product.Routes.Add(new PogRoute { Active = r.Active, Address = r.Address, MaxQuantity = r.MaxQuantity, Quantity = r.Quantity });
+                        product.Routes.Add(new PogRoute {
+                            Active = r.Active,
+                            Address = r.Address,
+                            MaxQuantity = r.MaxQuantity,
+                            Quantity = r.Quantity,
+                            MockedQuantity = r.MockedQuantity,
+                            MockedActive = r.MockedActive
+                        });
                     }
                 }
             }

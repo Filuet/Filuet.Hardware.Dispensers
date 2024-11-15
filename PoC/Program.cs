@@ -21,16 +21,17 @@ namespace PoC
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool AllocConsole();
 
+        const string planogram_path = "C:/Filuet/Dispensing/test_planogram.json";
+
         static void Main(string[] args) {
             AllocConsole();
 
             PoCForm form = new PoCForm();
 
             form.Show();
-            Pog planogram = Pog.Read(File.ReadAllText("test_planogram.json"));
 
             IServiceProvider sp = new ServiceCollection()
-                .AddSingleton(planogram)
+                .AddTransient(sp => Pog.Read(File.ReadAllText(planogram_path)))
                 .AddSingleton<IMemoryCachingService, MemoryCachingService>()
                 .AddVendingMachine(sp => {
                     ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
@@ -93,7 +94,7 @@ namespace PoC
                     vendingMachine.onPlanogramClarification += (sender, e) => {
                         form.Planogram = e.Planogram;
                         form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Comment ?? "The planogram refreshed");
-                        e.Planogram.Write("test_planogram.json");
+                        e.Planogram.Write(planogram_path);
                     };
 
                     // vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Message);

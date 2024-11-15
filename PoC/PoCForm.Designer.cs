@@ -29,6 +29,7 @@ namespace PoC
         /// </summary>
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PoCForm));
             dispensersListBox = new System.Windows.Forms.ListBox();
             label1 = new System.Windows.Forms.Label();
             addressesListBox = new System.Windows.Forms.ListBox();
@@ -56,10 +57,12 @@ namespace PoC
             skuComboBox = new System.Windows.Forms.ComboBox();
             tabPage2 = new System.Windows.Forms.TabPage();
             planogramTreeView = new System.Windows.Forms.TreeView();
+            imageList1 = new System.Windows.Forms.ImageList(components);
             savePlanogramButton = new System.Windows.Forms.Button();
             contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(components);
             pingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             activateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            deactivateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             tabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             tabControl2.SuspendLayout();
@@ -363,11 +366,31 @@ namespace PoC
             // planogramTreeView
             // 
             planogramTreeView.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            planogramTreeView.ImageIndex = 0;
+            planogramTreeView.ImageList = imageList1;
             planogramTreeView.Location = new System.Drawing.Point(3, 3);
             planogramTreeView.Name = "planogramTreeView";
+            planogramTreeView.SelectedImageIndex = 10;
             planogramTreeView.Size = new System.Drawing.Size(786, 397);
             planogramTreeView.TabIndex = 2;
             planogramTreeView.MouseClick += planogramTreeView_MouseClick;
+            // 
+            // imageList1
+            // 
+            imageList1.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
+            imageList1.ImageStream = (System.Windows.Forms.ImageListStreamer)resources.GetObject("imageList1.ImageStream");
+            imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            imageList1.Images.SetKeyName(0, "product.png");
+            imageList1.Images.SetKeyName(1, "a.png");
+            imageList1.Images.SetKeyName(2, "u.png");
+            imageList1.Images.SetKeyName(3, "0.png");
+            imageList1.Images.SetKeyName(4, "au.png");
+            imageList1.Images.SetKeyName(5, "ua.png");
+            imageList1.Images.SetKeyName(6, "a0.png");
+            imageList1.Images.SetKeyName(7, "u0.png");
+            imageList1.Images.SetKeyName(8, "0a.png");
+            imageList1.Images.SetKeyName(9, "0u.png");
+            imageList1.Images.SetKeyName(10, "current.png");
             // 
             // savePlanogramButton
             // 
@@ -382,23 +405,30 @@ namespace PoC
             // 
             // contextMenuStrip1
             // 
-            contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { pingToolStripMenuItem, activateToolStripMenuItem });
+            contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { pingToolStripMenuItem, activateToolStripMenuItem, deactivateToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new System.Drawing.Size(118, 48);
+            contextMenuStrip1.Size = new System.Drawing.Size(130, 70);
             // 
             // pingToolStripMenuItem
             // 
             pingToolStripMenuItem.Name = "pingToolStripMenuItem";
-            pingToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
+            pingToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
             pingToolStripMenuItem.Text = "Ping";
             pingToolStripMenuItem.Click += pingToolStripMenuItem_Click;
             // 
             // activateToolStripMenuItem
             // 
             activateToolStripMenuItem.Name = "activateToolStripMenuItem";
-            activateToolStripMenuItem.Size = new System.Drawing.Size(117, 22);
+            activateToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
             activateToolStripMenuItem.Text = "Activate";
             activateToolStripMenuItem.Click += activateToolStripMenuItem_Click;
+            // 
+            // deactivateToolStripMenuItem
+            // 
+            deactivateToolStripMenuItem.Name = "deactivateToolStripMenuItem";
+            deactivateToolStripMenuItem.Size = new System.Drawing.Size(129, 22);
+            deactivateToolStripMenuItem.Text = "Deactivate";
+            deactivateToolStripMenuItem.Click += deactivateToolStripMenuItem_Click;
             // 
             // PoCForm
             // 
@@ -456,5 +486,7 @@ namespace PoC
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem pingToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem activateToolStripMenuItem;
+        private System.Windows.Forms.ImageList imageList1;
+        private System.Windows.Forms.ToolStripMenuItem deactivateToolStripMenuItem;
     }
 }

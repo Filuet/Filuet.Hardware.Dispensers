@@ -24,7 +24,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-string planogramAddress = "test_planogram.json";
+string planogramAddress = "C:/Filuet/Dispensing/test_planogram.json";
 
 Pog planogram = Pog.Read(File.ReadAllText(planogramAddress));
 builder.Services.AddSingleton(planogram)
@@ -33,7 +33,7 @@ builder.Services.AddSingleton(planogram)
         ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
         IVendingMachine vendingMachine = new VendingMachineBuilder()
             .AddDispensers(() => {
-                string jsonSettings = File.ReadAllText("dispensing_settings.json");
+                string jsonSettings = File.ReadAllText("C:/Filuet/Dispensing/dispensing_settings.json");
                 var machineSettings = JsonSerializer.Deserialize<IEnumerable<VisionEsPlusSettings>>(jsonSettings);
                 List<IDispenser> result = new List<IDispenser>();
                 

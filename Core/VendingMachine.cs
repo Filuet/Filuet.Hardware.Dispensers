@@ -49,7 +49,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     }
 
                     onWaitingProductsToBeRemoved?.Invoke(sender, e);
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = comment, MachineId = d.Id });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = "products dispensed", MachineId = d.Id });
                 };
                 d.onAddressUnavailable += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
