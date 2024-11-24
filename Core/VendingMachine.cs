@@ -86,7 +86,8 @@ namespace Filuet.Hardware.Dispensers.Core
             _planogram = planogram;
 
             Task.Delay(1000).ContinueWith(t => TestAsync().ConfigureAwait(false));
-            PingRoutesAsync(_dispensers.Select(x => x.Id).ToArray()).ConfigureAwait(false);
+            // Let's spare some time and don't ping routes
+            // PingRoutesAsync(_dispensers.Select(x => x.Id).ToArray()).ConfigureAwait(false);
         }
 
         public async Task DispenseAsync(Cart cart) {

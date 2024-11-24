@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -55,6 +56,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         public void Write(string path) {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new BoolToNumJsonConverter());
+            options.WriteIndented = true;
             File.WriteAllText(path, JsonSerializer.Serialize(Products, options));
         }
 

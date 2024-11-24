@@ -1,6 +1,7 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
+using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
 using PoC.Models;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,6 @@ using System.Windows.Forms;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
-using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
 
 namespace PoC
 {

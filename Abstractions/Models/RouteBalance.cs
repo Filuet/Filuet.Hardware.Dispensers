@@ -9,5 +9,8 @@
         public string Address { get; set; }
         public ushort Quantity { get; set; }
         public bool Active { get; set; } = true;
+
+        public override string ToString()
+            => $"{Quantity}x{Product} from {Address}{(Active ? string.Empty : " [Inactive]")}";
     }
 }

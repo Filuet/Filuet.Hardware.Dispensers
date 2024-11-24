@@ -151,14 +151,15 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// 
         /// </summary>
         /// <param name="cart"></param>
-        /// <param name="retry">0- it's thje first run which tries leave the last one product on the belt. 1- dispense even the last item of product</param>
+        /// <param name="takeLast">0- it's the first run which tries to leave the last one product on the belt. 1- dispense even the last item of product</param>
         /// <returns></returns>
-        private async Task<Cart> DispenseSessionAsync(Cart cart, bool retry = false) {
-            Func<int, List<Slot>> _rebuildSlotChain = minTray => { // as soon as we can only ascend to get products we have to exclude lower trays
+        private async Task<Cart> DispenseSessionAsync(Cart cart, bool takeLast = false) {
+            Func<int, bool, List<RouteBalance>> _calculateBalances = (minTray, takeLastItem) => {
                 Pog planogram = _calcPlanogram();
+
                 // all active and not empty routes of the current machine with the cart products
                 Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = planogram.Products.Where(x => cart.Products.Contains(x.Product))
-                    .Select(x => new KeyValuePair<string, IEnumerable<PogRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (retry ? 0 : 1))))
+                    .Select(x => new KeyValuePair<string, IEnumerable<PogRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (takeLastItem ? 0 : 1))))
                     .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Product = planogram[y.Address].Product }));
 
                 // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
@@ -166,15 +167,24 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     .Where(x => ((EspBeltAddress)x.Address).Tray >= minTray) // ignore trays that are currently lower than the elevator
                     .OrderBy(x => {
                         EspBeltAddress espAddr = (EspBeltAddress)x.Address;
-                        if (espAddr.Tray < minTray)
-                            return null;
-                        return $"{espAddr.Tray}/{x.Product}/{x.Quantity}";
+                        return espAddr.Tray < minTray ? null : $"{espAddr.Tray}/{x.Product}/{x.Quantity}";
                     }).ToList();
+
+                List<RouteBalance> result = new List<RouteBalance>();
+                // now let's exclude inactive belts
+                foreach (var b in balances)
+                    if (IsBeltActive(b.Address) ?? false)
+                        result.Add(b);
+                return result;
+            };
+
+            Func<int, List<Slot>> _rebuildSlotChain = minTray => { // as soon as we can only ascend to get products we have to exclude lower trays
+                List<RouteBalance> balances = _calculateBalances(minTray, takeLast);
 
                 List<Slot> result = new List<Slot>();
 
                 foreach (var b in balances)
-                    for (int i = (retry ? 0 : 1); i < b.Quantity; i++)
+                    for (int i = (takeLast ? 0 : 1); i < b.Quantity; i++)
                         result.Add(new Slot { Address = b.Address, Product = b.Product });
 
                 return result;
@@ -314,7 +324,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             }
 
             // turn off lights after dispensing if needed
-            if ((cart.Items.Any() || retry) && !_settings.LightSettings.LightsAreNormallyOn)
+            if ((cart.Items.Any() || takeLast) && !_settings.LightSettings.LightsAreNormallyOn)
                 ChangeLight(false);
 
             return cart;
@@ -541,6 +551,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
         private string _bitConvert(byte[] data) => BitConverter.ToString(data).Replace('-', ' ');
 
+        /// <summary>
+        /// Fetch current planogram
+        /// </summary>
+        /// <returns></returns>
         private Pog _calcPlanogram() {
             Pog fullPlanogram = _getPlanogram?.Invoke();
             return fullPlanogram.GetPartialPlanogram(x => ((EspBeltAddress)x).Machine == Id);
