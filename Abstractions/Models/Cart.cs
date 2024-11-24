@@ -6,7 +6,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
     public class Cart
     {
         public int this[string Product]
-            => Items.First(x => x.ProductUid == Product).Quantity;
+            => Items.First(x => x.Sku == Product).Quantity;
 
         public IEnumerable<CartItem> Items => _items;
         private List<CartItem> _items { get; set; }
@@ -16,10 +16,10 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
         }
 
         public IEnumerable<string> Products
-            => Items.Select(x => x.ProductUid).Distinct();
+            => Items.Select(x => x.Sku).Distinct();
 
         public void RemoveDispensed(string product) {
-            CartItem item = _items.FirstOrDefault(x => x.ProductUid == product);
+            CartItem item = _items.FirstOrDefault(x => x.Sku == product);
             if (item == null)
                 return;
 

@@ -135,7 +135,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                             }
                     }
                 }));
-        }            
+        }
 
         internal async Task<Cart> DispenseAsync(Cart cart) {
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state = await StatusAsync();
@@ -143,8 +143,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             if (state?.state != DispenserStateSeverity.Normal)
                 return cart;
 
+            ChangeLight(true); // turn on lights before dispensing 
             cart = await DispenseSessionAsync(cart); // run #1
-            return await DispenseSessionAsync(cart, true); // run #2 (more persistent) 
+            if (cart.Items.Any())
+                cart = await DispenseSessionAsync(cart); // run #2. JIC
+            ChangeLight(false); // turn off lights
+
+            return cart;
         }
 
         /// <summary>
@@ -153,21 +158,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// <param name="cart"></param>
         /// <param name="takeLast">0- it's the first run which tries to leave the last one product on the belt. 1- dispense even the last item of product</param>
         /// <returns></returns>
-        private async Task<Cart> DispenseSessionAsync(Cart cart, bool takeLast = false) {
-            Func<int, bool, List<RouteBalance>> _calculateBalances = (minTray, takeLastItem) => {
+        private async Task<Cart> DispenseSessionAsync(Cart cart) {
+            Func<int, BeltWithdrawalRules, List<RouteBalance>> _calculateBalances = (minTray, withdrawalRules) => {
                 Pog planogram = _calcPlanogram();
 
                 // all active and not empty routes of the current machine with the cart products
                 Dictionary<string, IEnumerable<RouteBalance>> prodRoutes = planogram.Products.Where(x => cart.Products.Contains(x.Product))
-                    .Select(x => new KeyValuePair<string, IEnumerable<PogRoute>>(x.Product, x.Routes.Where(x => (x.Active ?? true) && x.Quantity > (takeLastItem ? 0 : 1))))
-                    .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Product = planogram[y.Address].Product }));
+                    .Select(x => new KeyValuePair<string, IEnumerable<PogRoute>>(x.Product, x.Routes.Where(r => (r.Active ?? true) && r.Quantity > (withdrawalRules != null && withdrawalRules[x.Product] ? 0 : 1))))
+                    .ToDictionary(x => x.Key, x => x.Value.Select(y => new RouteBalance { Address = y.Address, Quantity = y.Quantity, Sku = planogram[y.Address].Product }));
 
-                // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
                 List<RouteBalance> balances = prodRoutes.SelectMany(x => x.Value)
                     .Where(x => ((EspBeltAddress)x.Address).Tray >= minTray) // ignore trays that are currently lower than the elevator
                     .OrderBy(x => {
                         EspBeltAddress espAddr = (EspBeltAddress)x.Address;
-                        return espAddr.Tray < minTray ? null : $"{espAddr.Tray}/{x.Product}/{x.Quantity}";
+                        return $"{espAddr.Tray}/{x.Sku}/{x.Quantity}"; // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
                     }).ToList();
 
                 List<RouteBalance> result = new List<RouteBalance>();
@@ -179,13 +183,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             };
 
             Func<int, List<Slot>> _rebuildSlotChain = minTray => { // as soon as we can only ascend to get products we have to exclude lower trays
-                List<RouteBalance> balances = _calculateBalances(minTray, takeLast);
+                List<RouteBalance> balances = _calculateBalances(minTray, null);
+
+                // let's check if there's a shortage of products. If it has a place to be, than allow to dispence the last product on the belts
+                IEnumerable<CartItem> shortage = cart.Items.Where(x => x.Quantity > balances.Where(y => y.Sku == x.Sku).Count());
+                if (shortage.Any()) {
+                    BeltWithdrawalRules rule = new BeltWithdrawalRules(shortage.Select(x => x.Sku)); // these products can be dispensed to the end
+                    balances = _calculateBalances(minTray, rule);
+                }
 
                 List<Slot> result = new List<Slot>();
 
                 foreach (var b in balances)
-                    for (int i = (takeLast ? 0 : 1); i < b.Quantity; i++)
-                        result.Add(new Slot { Address = b.Address, Product = b.Product });
+                    for (int i = 0; i < b.Quantity; i++)
+                        result.Add(new Slot { Address = b.Address, Sku = b.Sku });
 
                 return result;
             };
@@ -196,14 +207,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     return 0;
 
                 Slot current = slots.First();
-                if ((cart[current.Product] - 1) == 0 || slots.Where(x => x.Product == current.Product).Count() == 1) // we won't be trying to dispense (or can't dispense) this product, so we can easily remove similar slots
-                    slots.RemoveAll(x => x.Product == current.Product);
+                if ((cart[current.Sku] - 1) == 0 || slots.Where(x => x.Sku == current.Sku).Count() == 1) // we won't be trying to dispense (or can't dispense) this product, so we can easily remove similar slots
+                    slots.RemoveAll(x => x.Sku == current.Sku);
 
                 // the first slot in the 'reconsidered' list is the one we need
-                return slots.Any() ? _planogram.GetProductWeight(slots[0].Product) : 0;
+                return slots.Any() ? _planogram.GetProductWeight(slots[0].Sku) : 0;
             };
 
-            ChangeLight(true); // turn on lights before dispensing 
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state;
             List<DispenseEventArgs> droppedIntoTheElevatorProducts = new List<DispenseEventArgs>();
 
@@ -215,9 +225,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             while (availableSlots.Any()) {
                 Slot slot = availableSlots.First();
 
-                int productWeight = _planogram.GetProductWeight(slot.Product);
+                int productWeight = _planogram.GetProductWeight(slot.Sku);
                 int nextProductWeigth = _getNextWeight(availableSlots);
-                bool isTheVeryLastProduct = availableSlots.Count() == 1 || (!availableSlots.Any(x => x.Product != slot.Product) && cart[slot.Product] == 1); // there's one product of this kind to dispense and no other products on the dispensing list
+                bool isTheVeryLastProduct = availableSlots.Count() == 1 || (!availableSlots.Any(x => x.Sku != slot.Sku) && cart[slot.Sku] == 1); // there's one product of this kind to dispense and no other products on the dispensing list
                 addedWeight += productWeight;
                 bool sendVEND = addedWeight + nextProductWeigth > _settings.MaxExtractWeightPerTime || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
@@ -261,7 +271,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 switch (state?.state) {
                     case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
                         droppedIntoTheElevatorProducts.Add(DispenseEventArgs.Create(slot.Address));
-                        cart.RemoveDispensed(slot.Product); // remove dispensed item
+                        cart.RemoveDispensed(slot.Sku); // remove dispensed item
 
                         state = null;
                         state = await StatusAsync(); // Check if the machine ready to handle next command
@@ -323,10 +333,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 availableSlots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray);
             }
 
-            // turn off lights after dispensing if needed
-            if ((cart.Items.Any() || takeLast) && !_settings.LightSettings.LightsAreNormallyOn)
-                ChangeLight(false);
-
             return cart;
         }
 
@@ -356,7 +362,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             if (_settings.Emulation) {
                 Pog p = _calcPlanogram();
-                bool? isActive = p.GetRoute(route).MockedActive;
+                PogRoute r = p.GetRoute(route);
+                bool? isActive = r.MockedActive ?? r.Active;
                 onDataMoving?.Invoke(this, (true, $"Check belt {route}", "emulated"));
                 return isActive;
             }
