@@ -16,7 +16,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<DispenseEventArgs> onDispensed;
         event EventHandler<DispenseEventArgs> onAbandonment;
         event EventHandler<VendingMachineTestEventArgs> onTest;
-        event EventHandler<DispenseFailEventArgs> onFailed;
+        event EventHandler<DispenseFailedEventArgs> onFailed;
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
         event EventHandler<UnlockEventArgs> onMachineUnlocked;

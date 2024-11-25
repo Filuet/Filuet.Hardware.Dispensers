@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
-    public class FailedToDispenseEventArgs : EventArgs
+    public class FailedToDispenseEventArgs : DispenseSessionEventArgs
     {
         /// <summary>
         /// sku/quantity

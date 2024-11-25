@@ -5,6 +5,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
     public class Cart
     {
+        public string SessionId { get; set; }
         public int this[string Product]
             => Items.First(x => x.Sku == Product).Quantity;
 

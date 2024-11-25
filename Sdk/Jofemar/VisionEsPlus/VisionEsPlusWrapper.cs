@@ -23,7 +23,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
         public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
-        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
+        public event EventHandler<DispenseFailedEventArgs> onAddressUnavailable;
 
         public int Id => _machineAdapter.Id;
 

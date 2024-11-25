@@ -18,7 +18,7 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<DispenseEventArgs> onDispensed;
         public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<VendingMachineTestEventArgs> onTest;
-        public event EventHandler<DispenseFailEventArgs> onFailed;
+        public event EventHandler<DispenseFailedEventArgs> onFailed;
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
@@ -34,29 +34,28 @@ namespace Filuet.Hardware.Dispensers.Core
                 d.onTest += (sender, e) => onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
                 d.onDataMoving += (sender, e) => onDataMoving?.Invoke(sender, e);
                 d.onDispensing += (sender, e) => onDispensing?.Invoke(sender, e);
-                d.onDispensed += (sender, e) => onDispensed?.Invoke(sender, e);
+                d.onDispensed += (sender, e) => {
+                    PogRoute r = _planogram.GetRoute(e.address);
+                    r.Quantity--;
+                    if (r.MockedQuantity.HasValue) // emulation
+                        r.MockedQuantity--;
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = $"[{r.Address}] product dispensed", machineId = d.Id, sessionId = e.sessionId });
+
+                    onDispensed?.Invoke(sender, e); 
+                };
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
                 d.onReset += (sender, e) => {
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutesAsync(e.MachineId).RunSynchronously();
                 };
-                d.onWaitingProductsToBeRemoved += (sender, e) => {
-                    foreach (var a in e) {
-                        PogRoute r = _planogram.GetRoute(a.address);
-                        r.Quantity--;
-                        if (r.MockedQuantity.HasValue) // emulation
-                            r.MockedQuantity--;
-                    }
-
-                    onWaitingProductsToBeRemoved?.Invoke(sender, e);
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = "products dispensed", MachineId = d.Id });
-                };
+                d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
                 d.onAddressUnavailable += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
                     bool? formerValue = route.Active;
                     int formerQty = route.Quantity;
 
-                    string comment = null;
+                    string commentPlanogram = null;
+                    string commentError = null;
 
                     _planogram.SetAttributes(e.address, false);
                     if (e.emptyBelt) {
@@ -64,19 +63,24 @@ namespace Filuet.Hardware.Dispensers.Core
                         if (route.MockedQuantity.HasValue) // emulation
                             route.MockedQuantity = 0;
 
-                        if (formerQty != 0)
-                            comment = $"Quantity changed from {formerQty} to 0";
+                        if (formerQty != 0) {
+                            commentPlanogram = $"[{e.address}] is empty and blocked. Qty changed: {formerQty}→0";
+                            commentError = "Can't dispense from empty address";
+                        }
                     }
                     else {
                         route.Active = false;
                         if (route.MockedActive.HasValue) // emulation
                             route.MockedActive = false;
 
-                        if (!formerValue.HasValue || formerValue.Value)
-                            comment = "The route deactivated";
+                        if (!formerValue.HasValue || formerValue.Value) {
+                            commentPlanogram = $"[{e.address}] is inactive and disabled";
+                            commentError = "Address is inactive";
+                        }
                     }
 
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = comment, MachineId = d.Id });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = commentPlanogram, machineId = d.Id, sessionId = e.sessionId });
+                    onFailed?.Invoke(this, new DispenseFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = commentError, sessionId = e.sessionId });
                 };
             }
 
@@ -92,6 +96,8 @@ namespace Filuet.Hardware.Dispensers.Core
 
         public async Task DispenseAsync(Cart cart) {
             try {
+                cart.SessionId = DateTime.Now.ToString("HHmm");
+
                 await TestAsync();
                 // leave only active dispensers
                 IEnumerable<IDispenser> dispensers = _dispensers.Where(x => x.IsAvailable);
@@ -105,12 +111,14 @@ namespace Filuet.Hardware.Dispensers.Core
                         dispenserRank.Add((d, qty));
                 }
 
-                foreach (var x in dispenserRank.OrderByDescending(x=>x.qty)) {
+                if (!dispenserRank.Any())
+                    onFailed?.Invoke(this, new DispenseFailedEventArgs { message = "No products found to dispense" });
+
+                foreach (var x in dispenserRank.OrderByDescending(x => x.qty))
                     cart = await x.dispenser.DispenseAsync(cart);
-                }
             }
             catch (InvalidOperationException ex) {
-                onFailed?.Invoke(this, new DispenseFailEventArgs { message = ex.Message });
+                onFailed?.Invoke(this, new DispenseFailedEventArgs { message = ex.Message });
             }
         }
 
@@ -140,7 +148,7 @@ namespace Filuet.Hardware.Dispensers.Core
                                 _planogram.SetAttributes(a.address, a.isActive.Value);
                     });
 
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram, Comment = "Routes checked" });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = "Routes checked" });
                 });
 
         private bool PingRoute(string route) {
@@ -158,7 +166,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     }
             }
 
-            onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { Planogram = _planogram });
+            onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram });
 
             return isActive;
         }

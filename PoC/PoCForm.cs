@@ -2,6 +2,7 @@
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
 using Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus;
+using Microsoft.Extensions.Logging;
 using PoC.Models;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Threading;
 using System.Drawing;
 
@@ -141,14 +141,6 @@ namespace PoC
                     dispenseListBox.Items.RemoveAt(i);
                     dispenseListBox.Items.Add(new ItemToDispense { Product = i2d.Product, Qty = i2d.Qty });
                 }
-
-                //if (i.Product.ProductUid == product.ProductUid)
-                //{
-                //    uint newQty = i.Qty + qty;
-                //    alreadyExists = true;
-                //    dispenseListBox.Items.Remove(i);
-                //    dispenseListBox.Items.Add(new ItemToDispense { Product = i.Product, Qty = newQty });
-                //}
             }
 
             if (!alreadyExists)
@@ -189,7 +181,7 @@ namespace PoC
             //}
         }
 
-        public void Log(LogLevel level, string message) {
+        public void Log(LogLevel level, string message, string sessionId = null) {
             Invoke(new MethodInvoker(delegate ()
             {
                 Color color = Color.Black;
@@ -197,10 +189,12 @@ namespace PoC
                     color = Color.Orange;
                 else if (level == LogLevel.Error)
                     color = Color.Red;
-                else if (level == LogLevel.Verbose)
+                else if (level == LogLevel.Trace)
                     color = Color.Purple;
 
                 protoTextBox.AppendText($"{DateTime.Now:HH:mm:ss.fff}\t");
+                if (!string.IsNullOrWhiteSpace(sessionId))
+                    protoTextBox.AppendText($"{sessionId}  ");
                 protoTextBox.AppendText(message + Environment.NewLine, color);
             }));
         }

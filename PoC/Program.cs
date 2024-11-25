@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Filuet.Infrastructure.DataProvider.Interfaces;
 using Filuet.Infrastructure.DataProvider;
+using Microsoft.Extensions.Logging;
 
 namespace PoC
 {
@@ -86,15 +87,15 @@ namespace PoC
                         .AddPlanogram(sp.GetRequiredService<Pog>())
                         .Build();
 
-                    vendingMachine.onDispensing += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is started {e.address}");
-                    vendingMachine.onDispensed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Dispensing is finished {e}");
-                    vendingMachine.onAbandonment += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Warning, $"Likely that products were abandoned {e}");
-                    vendingMachine.onFailed += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Error, e.ToString());
-                    vendingMachine.onLightsChanged += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
+                    vendingMachine.onDispensing += (sender, e) => form.Log(LogLevel.Information, e.ToString(), e.sessionId);
+                    vendingMachine.onDispensed += (sender, e) => form.Log(LogLevel.Information, e.ToString(), e.sessionId);
+                    vendingMachine.onAbandonment += (sender, e) => form.Log(LogLevel.Warning, e.ToString(), e.sessionId);
+                    vendingMachine.onFailed += (sender, e) => form.Log(LogLevel.Error, e.ToString(), e.sessionId);
+                    vendingMachine.onLightsChanged += (sender, e) => form.Log(LogLevel.Information, $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
                     vendingMachine.onPlanogramClarification += (sender, e) => {
-                        form.Planogram = e.Planogram;
-                        form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Comment ?? "The planogram refreshed");
-                        e.Planogram.Write(planogram_path);
+                        form.Planogram = e.planogram;
+                        form.Log(LogLevel.Information, e.ToString() ?? "The planogram refreshed", e.sessionId);
+                        e.planogram.Write(planogram_path);
                     };
 
                     // vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Message);

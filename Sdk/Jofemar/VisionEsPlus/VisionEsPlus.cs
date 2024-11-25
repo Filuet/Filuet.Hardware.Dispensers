@@ -32,7 +32,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// </summary>
         public event EventHandler<DispenseEventArgs> onAbandonment;
         public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
-        public event EventHandler<DispenseFailEventArgs> onAddressUnavailable;
+        public event EventHandler<DispenseFailedEventArgs> onAddressUnavailable;
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
         /// 'true' means command, 'false' means response
@@ -104,7 +104,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     return (DispenserStateSeverity.Inoperable, VisionEsPlusResponseCodes.Unknown /* need to clarify*/, "the elevator is open");
 
                 if (_emulatorCache.IsDispensing())
-                    return (DispenserStateSeverity.NeedToWait, VisionEsPlusResponseCodes.Busy /* need to clarify*/, "the elevator is open");
+                    return (DispenserStateSeverity.NeedToWait, VisionEsPlusResponseCodes.Busy /* need to clarify*/, "dispensing in progress");
 
                 (DispenserStateSeverity, VisionEsPlusResponseCodes, string)? state = _emulatorCache.GetState();
                 if (state != null)
@@ -219,19 +219,18 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             int addedWeight = 0; // #5122
 
-            List<Slot> availableSlots = _rebuildSlotChain(0);
-            // ping slots and disable unavailable
+            List<Slot> slots = _rebuildSlotChain(0);
 
-            while (availableSlots.Any()) {
-                Slot slot = availableSlots.First();
+            while (slots.Any()) {
+                Slot slot = slots.First();
 
                 int productWeight = _planogram.GetProductWeight(slot.Sku);
-                int nextProductWeigth = _getNextWeight(availableSlots);
-                bool isTheVeryLastProduct = availableSlots.Count() == 1 || (!availableSlots.Any(x => x.Sku != slot.Sku) && cart[slot.Sku] == 1); // there's one product of this kind to dispense and no other products on the dispensing list
+                int nextProductWeigth = _getNextWeight(slots);
+                bool isTheVeryLastProduct = slots.Count() == 1 || (!slots.Any(x => x.Sku != slot.Sku) && cart[slot.Sku] == 1); // there's one product of this kind to dispense and no other products on the dispensing list
                 addedWeight += productWeight;
                 bool sendVEND = addedWeight + nextProductWeigth > _settings.MaxExtractWeightPerTime || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
-                onDispensing?.Invoke(this, DispenseEventArgs.Create(slot.Address)); // notify about dispensing product started
+                onDispensing?.Invoke(this, DispenseEventArgs.DispensingStarted(slot.Address, cart.SessionId)); // notify about dispensing product started
                 state = null;
                 Dispense(slot.Address, sendVEND);
 
@@ -241,96 +240,106 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 #region handle result
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
-                bool errorOrrured = false;
-                while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable) && sw.Elapsed.TotalSeconds < 30) {
+                bool errorOccured = false;
+                while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable || state.Value.state == DispenserStateSeverity.NeedToWait)
+                    && sw.Elapsed.TotalSeconds < 30) {
                     try {
-                        Thread.Sleep(3000);
+                        await Task.Delay(_settings.Emulation ? 300 : 3000);
                         state = await StatusAsync(); // Wait for the next not empty state
                         if (state.HasValue) {
                             if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
-                                onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = slot.Address, emptyBelt = true });
-                                errorOrrured = true;
+                                onAddressUnavailable?.Invoke(this, new DispenseFailedEventArgs { address = slot.Address, emptyBelt = true, sessionId = cart.SessionId });
+                                errorOccured = true;
                                 break;
                             }
                             else if (state.Value.internalState == VisionEsPlusResponseCodes.InvalidChannelRequested) { // there's no such a belt
-                                onAddressUnavailable?.Invoke(this, new DispenseFailEventArgs { address = slot.Address, emptyBelt = false });
-                                errorOrrured = true;
+                                onAddressUnavailable?.Invoke(this, new DispenseFailedEventArgs { address = slot.Address, emptyBelt = false, sessionId = cart.SessionId });
+                                errorOccured = true;
                                 break;
                             }
                         }
                     }
                     catch (SocketException) { }
                     catch (Exception ex) { }
+
+                    switch (state?.state) {
+                        case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
+                            var de = DispenseEventArgs.DispensingFinished(slot.Address, cart.SessionId);
+                            droppedIntoTheElevatorProducts.Add(de);
+                            onDispensed?.Invoke(this, de);
+                            cart.RemoveDispensed(slot.Sku); // remove dispensed item
+                            slots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray); // product dispensed. Let's rebuild the chain
+
+                            state = null;
+                            state = await StatusAsync(); // Check if the machine ready to handle next command
+
+                            if (state?.state != DispenserStateSeverity.Normal) // The machine is in error state
+                            {
+                                switch (state?.internalState) {
+                                    case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
+                                        addedWeight = 0; // let's drop the value JIC. Because the machine can park the elevator without VEND command. For example, the sensor was blocked by a volumetric product 
+
+                                        onWaitingProductsToBeRemoved?.Invoke(this, droppedIntoTheElevatorProducts);
+                                        state = null;
+
+                                        Stopwatch sw1 = new Stopwatch();
+                                        sw1.Start();
+
+                                        while ((state == null ||
+                                            state.Value.state == DispenserStateSeverity.Inoperable ||
+                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 120) {
+                                            try {
+                                                Thread.Sleep(3000);
+                                                state = await StatusAsync(); // Wait for the next not empty state 
+                                            }
+                                            catch (SocketException) { }
+                                            catch (Exception ex) { }
+                                        }
+                                        sw1.Stop();
+
+                                        if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus) // The product/s was/were given
+                                            droppedIntoTheElevatorProducts.Clear(); // Consider the products as dispensed
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) {
+                                            // Looks like the customer has forgotten to pick up the products. At least they're in the elevator so far
+                                            foreach (var p in droppedIntoTheElevatorProducts)
+                                                onAbandonment?.Invoke(this, p);
+
+                                            droppedIntoTheElevatorProducts.Clear(); // Consider the products as disputable, but as for now forget them
+                                        }
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector) {
+                                            // This could happen when during the descent the product fell and stopped blocking the detector or, conversely, turned over and blocked it.
+                                            // This doesn't mean that the product wasn't issued
+                                        }
+
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                            break;
+                        case DispenserStateSeverity.NeedToWait:
+                            //if (state.Value.message)
+                            // Log(...);
+                            break;
+                        case DispenserStateSeverity.MaintenanceService:
+                            errorOccured = true;
+                            onFailedToDispense?.Invoke(this, new FailedToDispenseEventArgs { sessionId = cart.SessionId, ProductsNotGivenFromAddresses = cart.Items.ToDictionary(x => x.Sku, x => x.Quantity) });
+                            break;
+                        case DispenserStateSeverity.Inoperable:
+                            // todo
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 sw.Stop();
-                if (errorOrrured) {
-                    availableSlots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray);
+
+                if (errorOccured) {
+                    slots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray); // product wasn't dispensed. Let's rebuild the chain
                     continue;
                 }
-
-                switch (state?.state) {
-                    case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
-                        droppedIntoTheElevatorProducts.Add(DispenseEventArgs.Create(slot.Address));
-                        cart.RemoveDispensed(slot.Sku); // remove dispensed item
-
-                        state = null;
-                        state = await StatusAsync(); // Check if the machine ready to handle next command
-
-                        if (state?.state != DispenserStateSeverity.Normal) // The machine is in error state
-                        {
-                            switch (state?.internalState) {
-                                case VisionEsPlusResponseCodes.WaitingForProductToBeRemoved:
-                                    addedWeight = 0; // let's drop the value JIC. Because the machine can park the elevator without VEND command. For example, the sensor was blocked by a volumetric product 
-
-                                    onWaitingProductsToBeRemoved?.Invoke(this, droppedIntoTheElevatorProducts);
-                                    state = null;
-
-                                    Stopwatch sw1 = new Stopwatch();
-                                    sw1.Start();
-
-                                    while ((state == null ||
-                                        state.Value.state == DispenserStateSeverity.Inoperable ||
-                                        state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 120) {
-                                        try {
-                                            Thread.Sleep(3000);
-                                            state = await StatusAsync(); // Wait for the next not empty state 
-                                        }
-                                        catch (SocketException) { }
-                                        catch (Exception ex) { }
-                                    }
-                                    sw1.Stop();
-
-                                    if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus) { // The product/s was/were given
-                                        foreach (var p in droppedIntoTheElevatorProducts)
-                                            onDispensed?.Invoke(this, p);
-
-                                        droppedIntoTheElevatorProducts.Clear(); // Consider the products as dispensed
-                                    }
-                                    else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) {
-                                        // Looks like the customer has forgotten to pick up the products. At least they're in the elevator so far
-                                        foreach (var p in droppedIntoTheElevatorProducts)
-                                            onAbandonment?.Invoke(this, p);
-
-                                        droppedIntoTheElevatorProducts.Clear(); // Consider the products as disputable, but as for now forget them
-                                    }
-                                    else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector) {
-                                        // This could happen when during the descent the product fell and stopped blocking the detector or, conversely, turned over and blocked it.
-                                        // This doesn't mean that the product wasn't issued
-                                    }
-
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
                 #endregion
-
-                availableSlots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray);
             }
 
             return cart;
@@ -344,7 +353,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 PogRoute route = p.GetRoute(address);
                 if (route.MockedQuantity < 1)
                     _emulatorCache.RaiseEmptyBelt(address);
-                else if (route.MockedActive.HasValue && route.MockedActive.Value)
+                else if (route.MockedActive.HasValue && !route.MockedActive.Value)
                     _emulatorCache.RaiseInvalidAddress(address);
 
                 onDataMoving?.Invoke(this, (true, $"Dispense from {address}", "emulated"));

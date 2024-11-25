@@ -87,7 +87,7 @@ builder.Services.AddSingleton(planogram)
         };
 
         vendingMachine.onPlanogramClarification += (sender, e) => {
-            e.Planogram.Write(planogramAddress);
+            e.planogram.Write(planogramAddress);
             //form.Planogram = e.Planogram;
             //form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, $"The planogram is downloaded");
         };

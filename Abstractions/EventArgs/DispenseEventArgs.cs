@@ -1,14 +1,19 @@
-﻿using System;
-
-namespace Filuet.Hardware.Dispensers.Abstractions
+﻿namespace Filuet.Hardware.Dispensers.Abstractions
 {
-    public class DispenseEventArgs : EventArgs
+    public class DispenseEventArgs : DispenseSessionEventArgs
     {
-        public string address { get; set; } // One item was dispensed from the address
+        /// <summary>
+        /// One item was dispensed from the address
+        /// </summary>
+        public string address { get; set; }
+        public string message { get; set; }
 
-        public static DispenseEventArgs Create(string address)
-            => new DispenseEventArgs { address = address };
+        public static DispenseEventArgs DispensingStarted(string address, string sessionId)
+            => new DispenseEventArgs { address = address, sessionId = sessionId , message = "dispensing started" };        
+        
+        public static DispenseEventArgs DispensingFinished(string address, string sessionId)
+            => new DispenseEventArgs { address = address, sessionId = sessionId , message = "dispensing finished" };
 
-        public override string ToString() => $"{GetType().Name}({address})";
+        public override string ToString() => $"[{address}] {GetType().Name} {message}";
     }
 }
