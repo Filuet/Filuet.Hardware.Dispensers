@@ -11,19 +11,17 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
     public class VisionEsPlusWrapper : IDispenser, ILightEmitter
     {
-        public event EventHandler<DispenseEventArgs> onDispensing;
-        public event EventHandler<DispenseEventArgs> onDispensed;
-        /// <summary>
-        /// Fires when the customer forgets to pick up the products
-        /// </summary>
-        public event EventHandler<DispenseEventArgs> onAbandonment;
+        public event EventHandler<AddressEventArgs> onAbandonment;
+        public event EventHandler<DispensingFailedEventArgs> onAddressUnavailable;
+        public event EventHandler<AddressEventArgs> onAddressInactive;
+        public event EventHandler<AddressEventArgs> onDispensing;
+        public event EventHandler<AddressEventArgs> onDispensed;
         public event EventHandler<DispenserTestEventArgs> onTest;
         public event EventHandler<ResetEventArgs> onReset;
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
-        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
         public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
-        public event EventHandler<DispenseFailedEventArgs> onAddressUnavailable;
 
         public int Id => _machineAdapter.Id;
 
@@ -33,12 +31,13 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             _machineAdapter = machineAdapter;
             _machineAdapter.onDataMoving += (sender, e) => onDataMoving?.Invoke(this, e);
             _machineAdapter.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, LightEmitterEventArgs.Create(_machineAdapter.Id, e));
+            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
+            _machineAdapter.onAddressInactive += (sender, e) => onAddressInactive?.Invoke(this, e);
             _machineAdapter.onDispensing += (sender, e) => onDispensing?.Invoke(this, e);
             _machineAdapter.onDispensed += (sender, e) => onDispensed?.Invoke(this, e);
-            _machineAdapter.onAbandonment += (sender, e) => onAbandonment?.Invoke(this, e);
             _machineAdapter.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(this, e);
             _machineAdapter.onFailedToDispense += (sender, e) => onFailedToDispense?.Invoke(this, e);
-            _machineAdapter.onAddressUnavailable += (sender, e) => onAddressUnavailable?.Invoke(this, e);
+            _machineAdapter.onDispensingFailed += (sender, e) => onAddressUnavailable?.Invoke(this, e);
         }
 
         public async Task TestAsync() {

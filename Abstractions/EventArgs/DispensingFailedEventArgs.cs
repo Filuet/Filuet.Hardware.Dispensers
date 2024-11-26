@@ -1,6 +1,6 @@
 ﻿namespace Filuet.Hardware.Dispensers.Abstractions
 {
-    public class DispenseFailedEventArgs : DispenseSessionEventArgs
+    public class DispensingFailedEventArgs : DispenseSessionEventArgs
     {
         public string address { get; set; }
 

@@ -14,15 +14,16 @@ namespace Filuet.Hardware.Dispensers.Core
     internal class VendingMachine : IVendingMachine
     {
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
-        public event EventHandler<DispenseEventArgs> onDispensing;
-        public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<DispenseEventArgs> onAbandonment;
+        public event EventHandler<AddressEventArgs> onAbandonment;
+        public event EventHandler<AddressEventArgs> onAddressInactive;
+        public event EventHandler<AddressEventArgs> onDispensing;
+        public event EventHandler<AddressEventArgs> onDispensed;
         public event EventHandler<VendingMachineTestEventArgs> onTest;
-        public event EventHandler<DispenseFailedEventArgs> onFailed;
+        public event EventHandler<DispensingFailedEventArgs> onFailed;
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        public event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
 
         public VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -44,6 +45,15 @@ namespace Filuet.Hardware.Dispensers.Core
                     onDispensed?.Invoke(sender, e); 
                 };
                 d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
+                d.onAddressInactive += (sender, e) => {
+                    PogRoute route = _planogram.GetRoute(e.address);
+                    _planogram.SetAttributes(e.address, false);
+                    if (route.MockedActive.HasValue) // emulation
+                        route.MockedActive = false;
+
+                    onAddressInactive?.Invoke(this, new AddressEventArgs { message = "Address's inactive", address = e.address, sessionId = e.sessionId });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = $"[{e.address}] is inactive and disabled", machineId = d.Id, sessionId = e.sessionId });
+                };
                 d.onReset += (sender, e) => {
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutesAsync(e.MachineId).RunSynchronously();
@@ -69,18 +79,17 @@ namespace Filuet.Hardware.Dispensers.Core
                         }
                     }
                     else {
-                        route.Active = false;
                         if (route.MockedActive.HasValue) // emulation
                             route.MockedActive = false;
 
                         if (!formerValue.HasValue || formerValue.Value) {
                             commentPlanogram = $"[{e.address}] is inactive and disabled";
-                            commentError = "Address is inactive";
+                            commentError = "Dispensing failed- address's inactive";
                         }
                     }
 
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = commentError, sessionId = e.sessionId });
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = commentPlanogram, machineId = d.Id, sessionId = e.sessionId });
-                    onFailed?.Invoke(this, new DispenseFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = commentError, sessionId = e.sessionId });
                 };
             }
 
@@ -112,13 +121,13 @@ namespace Filuet.Hardware.Dispensers.Core
                 }
 
                 if (!dispenserRank.Any())
-                    onFailed?.Invoke(this, new DispenseFailedEventArgs { message = "No products found to dispense" });
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { message = "No products found to dispense" });
 
                 foreach (var x in dispenserRank.OrderByDescending(x => x.qty))
                     cart = await x.dispenser.DispenseAsync(cart);
             }
             catch (InvalidOperationException ex) {
-                onFailed?.Invoke(this, new DispenseFailedEventArgs { message = ex.Message });
+                onFailed?.Invoke(this, new DispensingFailedEventArgs { message = ex.Message });
             }
         }
 

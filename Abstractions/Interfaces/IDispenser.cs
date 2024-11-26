@@ -10,13 +10,24 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     /// </summary>
     public interface IDispenser
     {
-        event EventHandler<DispenseEventArgs> onDispensing;
-        event EventHandler<DispenseEventArgs> onDispensed;
-        event EventHandler<DispenseEventArgs> onAbandonment;
-        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        /// <summary>
+        /// Fires when the customer forgets to pick up the products
+        /// </summary>
+        event EventHandler<AddressEventArgs> onAbandonment;
+        /// <summary>
+        /// Fires during dispensing activity
+        /// </summary>
+        event EventHandler<DispensingFailedEventArgs> onAddressUnavailable;
+        /// <summary>
+        /// Similar to onDispensingFailed but raises only during belt check
+        /// </summary>
+        event EventHandler<AddressEventArgs> onAddressInactive;
+        event EventHandler<AddressEventArgs> onDispensing;
+        event EventHandler<AddressEventArgs> onDispensed;
+        event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
         event EventHandler<DispenserTestEventArgs> onTest;
         event EventHandler<ResetEventArgs> onReset;
-        event EventHandler<DispenseFailedEventArgs> onAddressUnavailable;
+
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
 
         int Id { get; }

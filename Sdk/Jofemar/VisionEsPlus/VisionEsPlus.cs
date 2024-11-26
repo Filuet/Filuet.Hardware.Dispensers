@@ -19,20 +19,27 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
     {
         public event EventHandler<bool> onLightsChanged;
         /// <summary>
+        /// Fires when the customer forget to pick up the products
+        /// </summary>
+        public event EventHandler<AddressEventArgs> onAbandonment;
+        /// <summary>
+        /// Similar to onDispensingFailed but raises only during belt check
+        /// </summary>
+        public event EventHandler<AddressEventArgs> onAddressInactive;
+        /// <summary>
         /// start dispense
         /// </summary>
-        public event EventHandler<DispenseEventArgs> onDispensing;
+        public event EventHandler<AddressEventArgs> onDispensing;
         /// <summary>
         /// product dispensed
         /// </summary>
-        public event EventHandler<DispenseEventArgs> onDispensed;
-        public event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
-        /// <summary>
-        /// Fires when the customer forget to pick up the products
-        /// </summary>
-        public event EventHandler<DispenseEventArgs> onAbandonment;
+        public event EventHandler<AddressEventArgs> onDispensed;
+        public event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
         public event EventHandler<FailedToDispenseEventArgs> onFailedToDispense;
-        public event EventHandler<DispenseFailedEventArgs> onAddressUnavailable;
+        /// <summary>
+        /// Fires during dispensing activity
+        /// </summary>
+        public event EventHandler<DispensingFailedEventArgs> onDispensingFailed;
         /// <summary>
         /// tracks data transmitting hither and thither: 1) app -> dispenser; 2) dispenser -> app
         /// 'true' means command, 'false' means response
@@ -171,14 +178,19 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     .Where(x => ((EspBeltAddress)x.Address).Tray >= minTray) // ignore trays that are currently lower than the elevator
                     .OrderBy(x => {
                         EspBeltAddress espAddr = (EspBeltAddress)x.Address;
-                        return $"{espAddr.Tray}/{x.Sku}/{x.Quantity}"; // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product and remains
+                        return $"{espAddr.Tray}/{x.Sku}/{1000 - x.Quantity}"; // sort routes to dispense from. Tray- from bottom to top, Belt- sort by product, remains
                     }).ToList();
 
                 List<RouteBalance> result = new List<RouteBalance>();
                 // now let's exclude inactive belts
-                foreach (var b in balances)
-                    if (IsBeltActive(b.Address) ?? false)
+                foreach (var b in balances) {
+                    bool? beltActive = IsBeltActive(b.Address);
+                    if (beltActive ?? false)
                         result.Add(b);
+
+                    if (beltActive.HasValue && !beltActive.Value)
+                        onAddressInactive?.Invoke(this, new AddressEventArgs { address = b.Address, sessionId = cart.SessionId });
+                }
                 return result;
             };
 
@@ -215,7 +227,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             };
 
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state;
-            List<DispenseEventArgs> droppedIntoTheElevatorProducts = new List<DispenseEventArgs>();
+            List<AddressEventArgs> droppedIntoTheElevatorProducts = new List<AddressEventArgs>();
 
             int addedWeight = 0; // #5122
 
@@ -230,7 +242,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 addedWeight += productWeight;
                 bool sendVEND = addedWeight + nextProductWeigth > _settings.MaxExtractWeightPerTime || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
-                onDispensing?.Invoke(this, DispenseEventArgs.DispensingStarted(slot.Address, cart.SessionId)); // notify about dispensing product started
+                onDispensing?.Invoke(this, AddressEventArgs.DispensingStarted(slot.Address, cart.SessionId)); // notify about dispensing product started
                 state = null;
                 Dispense(slot.Address, sendVEND);
 
@@ -248,12 +260,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         state = await StatusAsync(); // Wait for the next not empty state
                         if (state.HasValue) {
                             if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
-                                onAddressUnavailable?.Invoke(this, new DispenseFailedEventArgs { address = slot.Address, emptyBelt = true, sessionId = cart.SessionId });
+                                onDispensingFailed?.Invoke(this, new DispensingFailedEventArgs { address = slot.Address, emptyBelt = true, sessionId = cart.SessionId });
                                 errorOccured = true;
                                 break;
                             }
                             else if (state.Value.internalState == VisionEsPlusResponseCodes.InvalidChannelRequested) { // there's no such a belt
-                                onAddressUnavailable?.Invoke(this, new DispenseFailedEventArgs { address = slot.Address, emptyBelt = false, sessionId = cart.SessionId });
+                                onDispensingFailed?.Invoke(this, new DispensingFailedEventArgs { address = slot.Address, emptyBelt = false, sessionId = cart.SessionId });
                                 errorOccured = true;
                                 break;
                             }
@@ -264,7 +276,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
-                            var de = DispenseEventArgs.DispensingFinished(slot.Address, cart.SessionId);
+                            var de = AddressEventArgs.DispensingFinished(slot.Address, cart.SessionId);
                             droppedIntoTheElevatorProducts.Add(de);
                             onDispensed?.Invoke(this, de);
                             cart.RemoveDispensed(slot.Sku); // remove dispensed item

@@ -12,15 +12,16 @@ namespace Filuet.Hardware.Dispensers.Abstractions
     public interface IVendingMachine
     {
         event EventHandler<(bool direction, string message, string data)> onDataMoving;
-        event EventHandler<DispenseEventArgs> onDispensing;
-        event EventHandler<DispenseEventArgs> onDispensed;
-        event EventHandler<DispenseEventArgs> onAbandonment;
+        event EventHandler<AddressEventArgs> onAbandonment;
+        event EventHandler<AddressEventArgs> onAddressInactive;
+        event EventHandler<AddressEventArgs> onDispensing;
+        event EventHandler<AddressEventArgs> onDispensed;
         event EventHandler<VendingMachineTestEventArgs> onTest;
-        event EventHandler<DispenseFailedEventArgs> onFailed;
+        event EventHandler<DispensingFailedEventArgs> onFailed;
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
         event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        event EventHandler<IEnumerable<DispenseEventArgs>> onWaitingProductsToBeRemoved;
+        event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
 
         Task DispenseAsync(Cart cart);
         void Unlock(params int[] machines);

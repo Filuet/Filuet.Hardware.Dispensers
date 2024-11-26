@@ -1,6 +1,4 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions.Models;
-using System;
-using System.Net;
 
 namespace Filuet.Hardware.Dispensers.Abstractions
 {
