@@ -43,7 +43,7 @@ namespace PoC
                             #region Machine1
                             VisionEsPlusSettings settings1 = new VisionEsPlusSettings {
                                 Id = 1,
-                                Emulation = true,
+                                Emulation = false,
                                 PortNumber = 5050,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
                                 IpOrSerialAddress = "COM11",// "172.16.7.104",//
@@ -65,7 +65,7 @@ namespace PoC
                             #region Machine2
                             VisionEsPlusSettings settings2 = new VisionEsPlusSettings {
                                 Id = 2,
-                                Emulation = true,
+                                Emulation = false,
                                 PortNumber = 5051,
                                 Address = string.Format("0x{0:X2}", 1), // "0x01",
                                 IpOrSerialAddress = "COM9",// "172.16.7.103",

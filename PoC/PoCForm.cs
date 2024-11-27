@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
 using System.Drawing;
+using System.Collections.Concurrent;
 
 namespace PoC
 {
@@ -37,20 +38,22 @@ namespace PoC
             _dispenser = dispenser;
 
             _dispenser.onTest += (sender, e) => {
-                MachineIdIsAvailable[e.Dispenser.Id] = e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Normal;
+                MachineIdIsAvailable.AddOrUpdate(e.Dispenser.Id, e.Severity == Filuet.Hardware.Dispensers.Abstractions.Enums.DispenserStateSeverity.Normal, (x, val) => val);
 
-                Invoke(new MethodInvoker(delegate ()
-                {
-                    dispensersListBox.Items.Clear();
+                lock (_factDispenser) {
+                    Invoke(new MethodInvoker(delegate ()
+                    {
+                        dispensersListBox.Items.Clear();
 
-                    foreach (var d in _factDispenser._dispensers) {
-                        if (MachineIdIsAvailable.ContainsKey(d.Id))
-                            dispensersListBox.Items.Add(d);
+                        foreach (var d in _factDispenser._dispensers) {
+                            if (MachineIdIsAvailable.ContainsKey(d.Id))
+                                dispensersListBox.Items.Add(d);
 
-                        if (d.Id == e.Dispenser.Id)
-                            Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"Machine {e.Dispenser.Id} status: {e.Message}");
-                    }
-                }));
+                            if (d.Id == e.Dispenser.Id)
+                                Log(MachineIdIsAvailable[d.Id] ? LogLevel.Information : LogLevel.Warning, $"Machine {e.Dispenser.Id} status: {e.Message}");
+                        }
+                    }));
+                }
             };
 
             _dispenser.onDataMoving += (sender, e) => {
@@ -335,7 +338,7 @@ namespace PoC
         }
 
         const string PLANOGRAM_FILE = "C:/Filuet/Dispensing/test_planogram.json";
-        private Dictionary<int, bool> MachineIdIsAvailable = new Dictionary<int, bool>();
+        private ConcurrentDictionary<int, bool> MachineIdIsAvailable = new ConcurrentDictionary<int, bool>();
         private IVendingMachine _dispenser;
         private Pog _planogram;
         private VendingMachine _factDispenser;
