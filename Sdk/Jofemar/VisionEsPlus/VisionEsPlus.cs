@@ -358,8 +358,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 if (errorOccured) {
                     slots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray); // product wasn't dispensed. Let's rebuild the chain
 
-                    if (!sendVEND && !slots.Any()) // if we failed to extract from the belt and there're no products left to dispense from this machine then Park the elevator
-                        SendToParkingPosition();
+                    if (!sendVEND && !slots.Any()) { // if we failed to extract from the belt and there're no products left to dispense from this machine then Park the elevator
+                        SendToParkingPosition(); // send to the parking lot
+                        await Task.Delay(10000);
+                        Unlock(); // and open the door of the elevator
+                    }
 
                     continue;
                 }
