@@ -227,11 +227,15 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     return 0;
 
                 Slot current = slots.First();
+                bool noMoreThisProduct = false;
                 if ((cart[current.Sku] - 1) == 0 || slots.Where(x => x.Sku == current.Sku).Count() == 1) // we won't be trying to dispense (or can't dispense) this product, so we can easily remove similar slots
-                    slots.RemoveAll(x => x.Sku == current.Sku);
+                    noMoreThisProduct = true;
+
+                Func<Slot, bool> _predicateNextProduct = x => noMoreThisProduct ? x.Sku != current.Sku : true;
 
                 // the first slot in the 'reconsidered' list is the one we need
-                return slots.Any() ? _planogram.GetProductWeight(slots[0].Sku) : 0;
+                return slots.Any(_predicateNextProduct) ? 
+                    _planogram.GetProductWeight(slots.First(_predicateNextProduct).Sku) : 0;
             };
 
             (DispenserStateSeverity state, VisionEsPlusResponseCodes internalState, string message)? state;
