@@ -82,14 +82,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             });
         }
 
-        internal void Reset() {
+        internal void Reset(VisionEsPlusResetType? resetType = VisionEsPlusResetType.MasterReset) {
             if (_settings.Emulation) {
                 _emulatorCache.InvokeReboot();
                 onDataMoving?.Invoke(this, (true, $"Reboot Machine {Id}", "emulated"));
                 return;
             }
 
-            runCommand(ResetCommand(), "Reset");
+            runCommand(ResetCommand(resetType), "Reset");
         }
 
         internal void Unlock() {
@@ -505,10 +505,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         /// Resets the machine
         /// </summary>
         /// <returns></returns>
-        private byte[] ResetCommand() {
+        private byte[] ResetCommand(VisionEsPlusResetType? resetType = VisionEsPlusResetType.MasterReset) {
             var retval = new byte[_commandBody.Length];
             Array.Copy(_commandBody, retval, _commandBody.Length);
             retval[4] = 0x52;
+            retval[5] = (byte)resetType.Value;
             InjectCheckSumm(retval);
             return retval;
         }

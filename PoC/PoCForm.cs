@@ -290,6 +290,16 @@ namespace PoC
             }
         }
 
+        private void resetSoldOutButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
+                IDispenser d = (IDispenser)x;
+                if (d is VisionEsPlusWrapper) {
+                    VisionEsPlusWrapper wp = (VisionEsPlusWrapper)d;
+                    wp._machineAdapter.Reset(Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Enums.VisionEsPlusResetType.SoldOutProducts);
+                }
+            }
+        }
+
         private void planogramTreeView_MouseClick(object sender, MouseEventArgs e) {
             PogRoute route = SelectedRoute;
             if (route != null && e.Button == MouseButtons.Right) {

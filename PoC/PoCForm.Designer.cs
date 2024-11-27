@@ -35,6 +35,7 @@ namespace PoC
             addressesListBox = new System.Windows.Forms.ListBox();
             tabControl1 = new System.Windows.Forms.TabControl();
             tabPage1 = new System.Windows.Forms.TabPage();
+            parkingButton = new System.Windows.Forms.Button();
             tabControl2 = new System.Windows.Forms.TabControl();
             tabPage3 = new System.Windows.Forms.TabPage();
             protoTextBox = new System.Windows.Forms.RichTextBox();
@@ -63,7 +64,7 @@ namespace PoC
             pingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             activateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             deactivateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            parkingButton = new System.Windows.Forms.Button();
+            resetSoldOutButton = new System.Windows.Forms.Button();
             tabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
             tabControl2.SuspendLayout();
@@ -121,6 +122,7 @@ namespace PoC
             // 
             // tabPage1
             // 
+            tabPage1.Controls.Add(resetSoldOutButton);
             tabPage1.Controls.Add(parkingButton);
             tabPage1.Controls.Add(tabControl2);
             tabPage1.Controls.Add(lightOffButton);
@@ -140,6 +142,17 @@ namespace PoC
             tabPage1.TabIndex = 0;
             tabPage1.Text = "Dispensing";
             tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // parkingButton
+            // 
+            parkingButton.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            parkingButton.Location = new System.Drawing.Point(561, 109);
+            parkingButton.Name = "parkingButton";
+            parkingButton.Size = new System.Drawing.Size(122, 23);
+            parkingButton.TabIndex = 20;
+            parkingButton.Text = "Parking";
+            parkingButton.UseVisualStyleBackColor = true;
+            parkingButton.Click += parkingButton_Click;
             // 
             // tabControl2
             // 
@@ -178,7 +191,7 @@ namespace PoC
             tabPage4.Location = new System.Drawing.Point(4, 24);
             tabPage4.Name = "tabPage4";
             tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            tabPage4.Size = new System.Drawing.Size(517, 257);
+            tabPage4.Size = new System.Drawing.Size(544, 257);
             tabPage4.TabIndex = 1;
             tabPage4.Text = "Telemetry";
             tabPage4.UseVisualStyleBackColor = true;
@@ -188,7 +201,7 @@ namespace PoC
             telemetryTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
             telemetryTextBox.Location = new System.Drawing.Point(3, 3);
             telemetryTextBox.Name = "telemetryTextBox";
-            telemetryTextBox.Size = new System.Drawing.Size(511, 251);
+            telemetryTextBox.Size = new System.Drawing.Size(538, 251);
             telemetryTextBox.TabIndex = 0;
             telemetryTextBox.Text = "...";
             // 
@@ -360,7 +373,7 @@ namespace PoC
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            tabPage2.Size = new System.Drawing.Size(792, 434);
+            tabPage2.Size = new System.Drawing.Size(823, 434);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Planogram";
             tabPage2.UseVisualStyleBackColor = true;
@@ -432,16 +445,16 @@ namespace PoC
             deactivateToolStripMenuItem.Text = "Deactivate";
             deactivateToolStripMenuItem.Click += deactivateToolStripMenuItem_Click;
             // 
-            // parkingButton
+            // resetSoldOutButton
             // 
-            parkingButton.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            parkingButton.Location = new System.Drawing.Point(561, 109);
-            parkingButton.Name = "parkingButton";
-            parkingButton.Size = new System.Drawing.Size(250, 23);
-            parkingButton.TabIndex = 20;
-            parkingButton.Text = "Parking";
-            parkingButton.UseVisualStyleBackColor = true;
-            parkingButton.Click += parkingButton_Click;
+            resetSoldOutButton.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            resetSoldOutButton.Location = new System.Drawing.Point(689, 109);
+            resetSoldOutButton.Name = "resetSoldOutButton";
+            resetSoldOutButton.Size = new System.Drawing.Size(122, 23);
+            resetSoldOutButton.TabIndex = 21;
+            resetSoldOutButton.Text = "Reset sold out";
+            resetSoldOutButton.UseVisualStyleBackColor = true;
+            resetSoldOutButton.Click += resetSoldOutButton_Click;
             // 
             // PoCForm
             // 
@@ -502,5 +515,6 @@ namespace PoC
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.ToolStripMenuItem deactivateToolStripMenuItem;
         private System.Windows.Forms.Button parkingButton;
+        private System.Windows.Forms.Button resetSoldOutButton;
     }
 }
