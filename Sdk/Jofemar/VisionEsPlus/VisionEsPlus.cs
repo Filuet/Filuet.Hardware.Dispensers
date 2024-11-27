@@ -198,9 +198,11 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 List<RouteBalance> balances = _calculateBalances(minTray, null);
 
                 // let's check if there's a shortage of products. If it has a place to be, than allow to dispence the last product on the belts
-                IEnumerable<CartItem> shortage = cart.Items.Where(x => x.Quantity > balances.Where(y => y.Sku == x.Sku).Count());
+                IEnumerable<CartItem> shortage = cart.Items.Where(x => x.Quantity >
+                // how many items can be dispensed from addresses with leaving the last one item
+                    (balances.Where(y => y.Sku == x.Sku).Sum(x => x.Quantity) - balances.Where(y => y.Sku == x.Sku).Count()));
 
-                BeltWithdrawalRules rule;
+                BeltWithdrawalRules rule = null;
                 if (shortage.Any()) {
                     rule = new BeltWithdrawalRules(shortage.Select(x => x.Sku)); // these products can be dispensed to the end
                     balances = _calculateBalances(minTray, rule);
@@ -209,8 +211,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 List<Slot> result = new List<Slot>();
 
                 foreach (var b in balances) {
-                    int leaveItemsQty = rule != null && rule[x.Product] ? 0 : 1;
-                    for (int i = 0; i < b.Quantity - useLastItem; i++)
+                    for (int i = 0; i < b.Quantity; i++)
                         result.Add(new Slot { Address = b.Address, Sku = b.Sku });
                 }
 
@@ -303,7 +304,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                                         while ((state == null ||
                                             state.Value.state == DispenserStateSeverity.Inoperable ||
-                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 120) {
+                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 60) {
                                             try {
                                                 Thread.Sleep(3000);
                                                 state = await StatusAsync(); // Wait for the next not empty state 

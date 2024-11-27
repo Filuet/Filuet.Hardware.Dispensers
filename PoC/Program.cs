@@ -89,7 +89,7 @@ namespace PoC
 
                     vendingMachine.onDispensing += (sender, e) => form.Log(LogLevel.Information, e.ToString(), e.sessionId);
                     vendingMachine.onDispensed += (sender, e) => form.Log(LogLevel.Information, e.ToString(), e.sessionId);
-                    vendingMachine.onAbandonment += (sender, e) => form.Log(LogLevel.Warning, e.ToString() + "@", e.sessionId);
+                    vendingMachine.onAbandonment += (sender, e) => form.Log(LogLevel.Warning, e.ToString() + " product wasn't taken", e.sessionId);
                     vendingMachine.onFailed += (sender, e) => form.Log(LogLevel.Error, e.ToString(), e.sessionId);
                     vendingMachine.onLightsChanged += (sender, e) => form.Log(LogLevel.Information, $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
                     vendingMachine.onPlanogramClarification += (sender, e) => {
