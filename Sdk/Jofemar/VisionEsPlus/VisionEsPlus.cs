@@ -354,6 +354,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 if (errorOccured) {
                     slots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray); // product wasn't dispensed. Let's rebuild the chain
+                    
+                    if (!sendVEND && !slots.Any()) // if we failed to extract from the belt and there're no products left to dispense from this machine then Park the elevator
+                        SendToParkingPosition();
+                    
                     continue;
                 }
                 #endregion
@@ -379,6 +383,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
             runCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
         }
+
+        private void SendToParkingPosition()
+            => runCommand(ParkingCommand);
 
         internal bool? IsBeltActive(string route) {
             EspBeltAddress address = route;
