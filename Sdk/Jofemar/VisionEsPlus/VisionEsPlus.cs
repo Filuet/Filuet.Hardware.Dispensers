@@ -365,15 +365,15 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         SendToParkingPosition(); // send to the parking lot
                         await Task.Delay(10000);
                         Unlock(); // and open the door of the elevator
-
-                        if (soldOutErrorOccured)
-                            Reset(VisionEsPlusResetType.SoldOutProducts);
                     }
 
                     continue;
                 }
                 #endregion
             }
+
+            if (soldOutErrorOccured)
+                Reset(VisionEsPlusResetType.SoldOutProducts);
 
             return cart;
         }
