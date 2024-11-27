@@ -199,16 +199,20 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 // let's check if there's a shortage of products. If it has a place to be, than allow to dispence the last product on the belts
                 IEnumerable<CartItem> shortage = cart.Items.Where(x => x.Quantity > balances.Where(y => y.Sku == x.Sku).Count());
+
+                BeltWithdrawalRules rule;
                 if (shortage.Any()) {
-                    BeltWithdrawalRules rule = new BeltWithdrawalRules(shortage.Select(x => x.Sku)); // these products can be dispensed to the end
+                    rule = new BeltWithdrawalRules(shortage.Select(x => x.Sku)); // these products can be dispensed to the end
                     balances = _calculateBalances(minTray, rule);
                 }
 
                 List<Slot> result = new List<Slot>();
 
-                foreach (var b in balances)
-                    for (int i = 0; i < b.Quantity; i++)
+                foreach (var b in balances) {
+                    int leaveItemsQty = rule != null && rule[x.Product] ? 0 : 1;
+                    for (int i = 0; i < b.Quantity - useLastItem; i++)
                         result.Add(new Slot { Address = b.Address, Sku = b.Sku });
+                }
 
                 return result;
             };
