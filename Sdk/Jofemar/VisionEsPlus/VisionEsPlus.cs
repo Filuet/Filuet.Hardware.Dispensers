@@ -10,11 +10,14 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+[assembly: InternalsVisibleTo("PoC")]
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
+
     public class VisionEsPlus
     {
         public event EventHandler<bool> onLightsChanged;
@@ -354,10 +357,10 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 if (errorOccured) {
                     slots = _rebuildSlotChain(((EspBeltAddress)slot.Address).Tray); // product wasn't dispensed. Let's rebuild the chain
-                    
+
                     if (!sendVEND && !slots.Any()) // if we failed to extract from the belt and there're no products left to dispense from this machine then Park the elevator
                         SendToParkingPosition();
-                    
+
                     continue;
                 }
                 #endregion
@@ -384,8 +387,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             runCommand(DispenseCommand(address.Tray, address.Belt, lastCommand), "Dispense");
         }
 
-        private void SendToParkingPosition()
-            => runCommand(ParkingCommand);
+        internal void SendToParkingPosition()
+            => runCommand(ParkingCommand(), "Parking");
 
         internal bool? IsBeltActive(string route) {
             EspBeltAddress address = route;

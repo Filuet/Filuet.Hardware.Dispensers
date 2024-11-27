@@ -280,6 +280,16 @@ namespace PoC
             }
         }
 
+        private void parkingButton_Click(object sender, EventArgs e) {
+            foreach (var x in dispensersListBox.SelectedItems) {
+                IDispenser d = (IDispenser)x;
+                if (d is VisionEsPlusWrapper) {
+                    VisionEsPlusWrapper wp = (VisionEsPlusWrapper)d;
+                    wp._machineAdapter.SendToParkingPosition();
+                }
+            }
+        }
+
         private void planogramTreeView_MouseClick(object sender, MouseEventArgs e) {
             PogRoute route = SelectedRoute;
             if (route != null && e.Button == MouseButtons.Right) {

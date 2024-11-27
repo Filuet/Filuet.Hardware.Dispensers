@@ -96,6 +96,6 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
         public override string ToString()
             => $"Machine {_machineAdapter.Id} [{typeof(VisionEsPlus).Name}]. {(IsAvailable ? "Available" : "Unavailable")}";
 
-        private VisionEsPlus _machineAdapter;
+        internal VisionEsPlus _machineAdapter;
     }
 }
