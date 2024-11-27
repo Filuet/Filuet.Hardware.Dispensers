@@ -240,6 +240,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             int addedWeight = 0; // #5122
 
             List<Slot> slots = _rebuildSlotChain(0);
+            bool soldOutErrorOccured = false;
 
             while (slots.Any()) {
                 Slot slot = slots.First();
@@ -261,6 +262,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
                 bool errorOccured = false;
+                
                 while ((state == null || state.Value.state == DispenserStateSeverity.Inoperable || state.Value.state == DispenserStateSeverity.NeedToWait)
                     && sw.Elapsed.TotalSeconds < 30) {
                     try {
@@ -270,6 +272,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                             if (state.Value.internalState == VisionEsPlusResponseCodes.EmptyChannel) { // belt is empty
                                 onDispensingFailed?.Invoke(this, new DispensingFailedEventArgs { address = slot.Address, emptyBelt = true, sessionId = cart.SessionId });
                                 errorOccured = true;
+                                soldOutErrorOccured = true;
                                 break;
                             }
                             else if (state.Value.internalState == VisionEsPlusResponseCodes.InvalidChannelRequested) { // there's no such a belt
@@ -362,6 +365,9 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                         SendToParkingPosition(); // send to the parking lot
                         await Task.Delay(10000);
                         Unlock(); // and open the door of the elevator
+
+                        if (soldOutErrorOccured)
+                            Reset(VisionEsPlusResetType.SoldOutProducts);
                     }
 
                     continue;
