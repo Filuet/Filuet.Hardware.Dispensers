@@ -1,5 +1,6 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 
@@ -30,11 +31,17 @@ namespace Filuet.Hardware.Dispensers.Core
             return this;
         }
 
+        public VendingMachineBuilder AddLogger(ILogger<VendingMachine> logger) {
+            _logger = logger;
+            return this;
+        }
+
         public IVendingMachine Build()
-            => new VendingMachine(_dispensers, _lightEmitters, _planogram);
+            => new VendingMachine(_dispensers, _lightEmitters, _planogram, _logger);
 
         private IEnumerable<IDispenser> _dispensers;
         private IEnumerable<ILightEmitter> _lightEmitters;
         private Pog _planogram;
+        private ILogger<VendingMachine> _logger;
     }
 }

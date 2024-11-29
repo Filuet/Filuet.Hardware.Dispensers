@@ -1,17 +1,18 @@
 ﻿using Filuet.Hardware.Dispensers.Abstractions;
+using Filuet.Hardware.Dispensers.Abstractions.Helpers;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 [assembly: InternalsVisibleTo("PoC")]
 
 namespace Filuet.Hardware.Dispensers.Core
 {
-    internal class VendingMachine : IVendingMachine
+    public class VendingMachine : IVendingMachine
     {
         public event EventHandler<(bool direction, string message, string data)> onDataMoving;
         public event EventHandler<AddressEventArgs> onAbandonment;
@@ -25,47 +26,83 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
         public event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
 
-        public VendingMachine(IEnumerable<IDispenser> dispensers,
+        internal VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
-            Pog planogram) {
+            Pog planogram,
+            ILogger<VendingMachine> logger) {
             _dispensers = dispensers;
             _lightEmitters = lightEmitters;
+            _logger = logger;
 
             foreach (IDispenser d in _dispensers) {
-                d.onTest += (sender, e) => onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
-                d.onDataMoving += (sender, e) => onDataMoving?.Invoke(sender, e);
-                d.onDispensing += (sender, e) => onDispensing?.Invoke(sender, e);
+                d.onTest += (sender, e) => {
+                    onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
+                    _logger.Log(e.Severity.ToLogLevel(), $"Dispenser {d.Id}. {e.Message}");
+                };
+
+                d.onDataMoving += (sender, e) => {
+                    onDataMoving?.Invoke(sender, e);
+                    _logger.LogInformation($"{(e.direction ? "→" : "←")} {e.data} [{e.message}]");
+                };
+
+                d.onDispensing += (sender, e) => {
+                    onDispensing?.Invoke(sender, e);
+                    _logger.LogInformation($"{e.sessionId} Dispensing from {e.address} started");
+                };
+
                 d.onDispensed += (sender, e) => {
                     PogRoute r = _planogram.GetRoute(e.address);
                     r.Quantity--;
                     if (r.MockedQuantity.HasValue) // emulation
                         r.MockedQuantity--;
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = $"[{r.Address}] product dispensed", machineId = d.Id, sessionId = e.sessionId });
 
-                    onDispensed?.Invoke(sender, e); 
+                    string planogramComment = $"dispensed from {r.Address}";
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
+                    _logger.LogError(planogramComment);
+
+                    onDispensed?.Invoke(sender, e);
+                    _logger.LogInformation($"{e.sessionId} {e.address} dispensed");
                 };
-                d.onAbandonment += (sender, e) => onAbandonment?.Invoke(sender, e);
+
+                d.onAbandonment += (sender, e) => {
+                    onAbandonment?.Invoke(sender, e);
+                    _logger.LogWarning($"{e.sessionId} {e.address} wasn't taken");
+                };
+
                 d.onAddressInactive += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
                     _planogram.SetAttributes(e.address, false);
                     if (route.MockedActive.HasValue) // emulation
                         route.MockedActive = false;
 
-                    onAddressInactive?.Invoke(this, new AddressEventArgs { message = "Address's inactive", address = e.address, sessionId = e.sessionId });
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = $"[{e.address}] is inactive and disabled", machineId = d.Id, sessionId = e.sessionId });
+                    _logger.LogWarning($"{e.sessionId} {e.address} inactive and disabled");
+                    onAddressInactive?.Invoke(this, new AddressEventArgs { message = "Address's inactive and disabled", address = e.address, sessionId = e.sessionId });
+
+                    string planogramComment = $"{e.address} is inactive and disabled";
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
+                    _logger.LogError(planogramComment);
                 };
+
                 d.onReset += (sender, e) => {
+                    _logger.LogInformation($"{e.MachineId} reset invoked");
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
                     PingRoutesAsync(e.MachineId).RunSynchronously();
                 };
-                d.onWaitingProductsToBeRemoved += (sender, e) => onWaitingProductsToBeRemoved?.Invoke(sender, e);
+
+                d.onWaitingProductsToBeRemoved += (sender, e) => {
+                    onWaitingProductsToBeRemoved?.Invoke(sender, e);
+
+                    foreach (var i in e)
+                        _logger.LogInformation($"{i.sessionId} An item from {i.address} ready to be taken");
+                };
+
                 d.onAddressUnavailable += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
                     bool? formerValue = route.Active;
                     int formerQty = route.Quantity;
 
-                    string commentPlanogram = null;
-                    string commentError = null;
+                    string planogramComment = null;
+                    string errorMessage = null;
 
                     _planogram.SetAttributes(e.address, false);
                     if (e.emptyBelt) {
@@ -74,8 +111,8 @@ namespace Filuet.Hardware.Dispensers.Core
                             route.MockedQuantity = 0;
 
                         if (formerQty != 0) {
-                            commentPlanogram = $"[{e.address}] is empty and blocked. Qty changed: {formerQty}→0";
-                            commentError = "Can't dispense from empty address";
+                            planogramComment = $"{e.address} is empty and blocked. Qty changed: {formerQty}→0";
+                            errorMessage = "Can't dispense from empty address";
                         }
                     }
                     else {
@@ -83,18 +120,23 @@ namespace Filuet.Hardware.Dispensers.Core
                             route.MockedActive = false;
 
                         if (!formerValue.HasValue || formerValue.Value) {
-                            commentPlanogram = $"[{e.address}] is inactive and disabled";
-                            commentError = "Dispensing failed- address's inactive";
+                            planogramComment = $"{e.address} is inactive and disabled";
+                            errorMessage = "Dispensing failed- address is inactive";
                         }
                     }
 
-                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = commentError, sessionId = e.sessionId });
-                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = commentPlanogram, machineId = d.Id, sessionId = e.sessionId });
+                    _logger.LogError($"{e.sessionId} {e.address} {errorMessage}");
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = errorMessage, sessionId = e.sessionId });
+                    onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
+                    _logger.LogError(planogramComment);
                 };
             }
 
             foreach (ILightEmitter l in _lightEmitters)
-                l.onLightsChanged += (sender, e) => onLightsChanged?.Invoke(this, e);
+                l.onLightsChanged += (sender, e) => {
+                    onLightsChanged?.Invoke(this, e);
+                    _logger.LogInformation($"Light emitter {e.Id}: {(e.IsOn ? "on" : "off")}");
+                };
 
             _planogram = planogram;
 
@@ -120,8 +162,11 @@ namespace Filuet.Hardware.Dispensers.Core
                         dispenserRank.Add((d, qty));
                 }
 
-                if (!dispenserRank.Any())
-                    onFailed?.Invoke(this, new DispensingFailedEventArgs { message = "No products found to dispense" });
+                if (!dispenserRank.Any()) {
+                    string errorMessage = "No products found to dispense";
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { message = errorMessage });
+                    _logger.LogError(errorMessage);
+                }
 
                 foreach (var x in dispenserRank.OrderByDescending(x => x.qty))
                     cart = await x.dispenser.DispenseAsync(cart);
@@ -158,6 +203,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     });
 
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = "Routes checked" });
+                    _logger.LogInformation("Routes checked");
                 });
 
         private bool PingRoute(string route) {
@@ -183,5 +229,6 @@ namespace Filuet.Hardware.Dispensers.Core
         internal readonly IEnumerable<IDispenser> _dispensers;
         internal readonly IEnumerable<ILightEmitter> _lightEmitters;
         internal readonly Pog _planogram;
+        private readonly ILogger<VendingMachine> _logger;
     }
 }

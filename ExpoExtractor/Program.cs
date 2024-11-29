@@ -14,6 +14,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.Json;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +54,7 @@ builder.Services.AddSingleton(planogram)
             })
             .AddLightEmitters(() => integratedEmitters)
             .AddPlanogram(sp.GetRequiredService<Pog>())
+            .AddLogger(sp.GetRequiredService<ILogger<VendingMachine>>())
             .Build();
 
         vendingMachine.onDispensing += (sender, e) => {

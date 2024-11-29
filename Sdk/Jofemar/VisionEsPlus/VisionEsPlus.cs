@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("PoC")]
 namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 {
-
     public class VisionEsPlus
     {
         public event EventHandler<bool> onLightsChanged;
@@ -575,7 +574,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 byte[] response = null;
 
                 try {
-                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotiatorLogger
+                    onDataMoving?.Invoke(this, (true, message, _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotiatorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
                 catch (SocketException) { }
@@ -584,7 +583,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                 postAction?.Invoke(code);
 
-                onDataMoving?.Invoke(this, (false, $"{message} Machine {Id}: {code}", _bitConvert(response)));
+                onDataMoving?.Invoke(this, (false, $"{message}: {code}", _bitConvert(response)));
             }
         }
 
@@ -593,14 +592,14 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 byte[] response = null;
 
                 try {
-                    onDataMoving?.Invoke(this, (true, $"{message} Machine {Id}", _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
+                    onDataMoving?.Invoke(this, (true, message, _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
                 catch (SocketException) { }
 
                 VisionEsPlusResponseCodes code = ParseResponse(response);
 
-                onDataMoving?.Invoke(this, (false, $"{message} Machine {Id}: {code}", _bitConvert(response)));
+                onDataMoving?.Invoke(this, (false, $"{message}: {code}", _bitConvert(response)));
 
                 return postAction.Invoke(response, code);
             }
