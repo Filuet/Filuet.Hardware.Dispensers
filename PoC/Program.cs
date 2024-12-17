@@ -32,6 +32,7 @@ namespace PoC
             form.Show();
 
             IServiceProvider sp = new ServiceCollection()
+                .AddLogging()
                 .AddTransient(sp => Pog.Read(File.ReadAllText(planogram_path)))
                 .AddSingleton<IMemoryCachingService, MemoryCachingService>()
                 .AddVendingMachine(sp => {

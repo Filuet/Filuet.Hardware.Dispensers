@@ -25,7 +25,7 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddLogging();
 string planogramAddress = "C:/Filuet/Dispensing/test_planogram.json";
 
 Pog planogram = Pog.Read(File.ReadAllText(planogramAddress));
