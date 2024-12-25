@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace Filuet.Hardware.Dispensers.Abstractions.Models
 {
@@ -60,7 +59,13 @@ namespace Filuet.Hardware.Dispensers.Abstractions.Models
             File.WriteAllText(path, JsonSerializer.Serialize(Products, options));
         }
 
-        public void UpdateRoute(PogRoute route, string productUid) {
+        public void UpdateRoute(PogRoute route, string productUid = null) {
+            if (string.IsNullOrWhiteSpace(productUid)) {
+                PogProduct existedProduct = this[route.Address];
+                if (existedProduct != null)
+                    productUid = existedProduct.Product;
+            }
+
             if (string.IsNullOrWhiteSpace(productUid))
                 throw new ArgumentException("Product UID is mandatory");
 

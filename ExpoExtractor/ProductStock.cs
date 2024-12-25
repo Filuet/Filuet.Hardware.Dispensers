@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace ExpoExtractor
+namespace Filuet.Hardware.Dispenser
 {
     public class ProductStock
     {

@@ -1,6 +1,7 @@
 using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -8,15 +9,15 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ExpoExtractor.Controllers
+namespace Filuet.Hardware.Dispenser.Controllers
 {
     [ApiController]
     [Route("dispensing")]
-    public class DispensingController : ControllerBase
-    {
-        public DispensingController(IVendingMachine vendingMachine, Pog planogram, ILogger<DispensingController> logger) {
+    public class DispensingController : ControllerBase {
+        public DispensingController(IVendingMachine vendingMachine, Pog planogram, IConfiguration configuration, ILogger<DispensingController> logger) {
             _vendingMachine = vendingMachine;
             _planogram = planogram;
+            _configuration = configuration;
             _logger = logger;
             _vendingMachine.onTest += (sender, e) => {
                 if (_message == null)
@@ -76,7 +77,40 @@ namespace ExpoExtractor.Controllers
         public void Unlock(int machine)
             => _vendingMachine.Unlock(machine);
 
+        [HttpPost("planogram")]
+        public IActionResult UpdatePlanogram([FromBody] RouteUpdateRequest planogramUpdate) {
+            if (string.IsNullOrWhiteSpace(planogramUpdate.Address))
+                return BadRequest("Address is mandatory");
+
+            if (!planogramUpdate.MaxQty.HasValue || !planogramUpdate.Qty.HasValue || !planogramUpdate.IsActive.HasValue) {
+                PogRoute route = _planogram.GetRoute(planogramUpdate.Address);
+                if (route != null) {
+                    planogramUpdate.Qty = planogramUpdate.Qty ?? route.Quantity;
+                    planogramUpdate.MaxQty = planogramUpdate.MaxQty ?? route.MaxQuantity;
+                    planogramUpdate.IsActive = planogramUpdate.IsActive ?? route.Active;
+                }
+                else throw new ArgumentException("Product quantity, max quantity and active flag are mandatory");
+            }
+
+            if (planogramUpdate.Qty > planogramUpdate.MaxQty)
+                return BadRequest("Wrong max quantity");
+
+            _planogram.UpdateRoute(new PogRoute {
+                Active = planogramUpdate.IsActive,
+                Address = planogramUpdate.Address,
+                Quantity = (ushort)planogramUpdate.Qty.Value,
+                MaxQuantity = (ushort)planogramUpdate.MaxQty.Value
+            }, planogramUpdate.Sku);
+
+            string planogramPath = _configuration["PlanogramPath"];
+
+            _planogram.Write(planogramPath);
+
+            return Ok();
+        }
+
         private readonly IVendingMachine _vendingMachine;
+        private readonly IConfiguration _configuration;
         private readonly Pog _planogram;
         private List<MachineTestResult> _message;
         private readonly ILogger<DispensingController> _logger;

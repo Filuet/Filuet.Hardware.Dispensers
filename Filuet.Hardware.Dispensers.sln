@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Filuet.Hardware.Dispensers.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PoC", "PoC\PoC.csproj", "{5B7ACDFC-D2EF-44E6-B8A8-29D0591C6453}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpoExtractor", "ExpoExtractor\ExpoExtractor.csproj", "{1665FAFF-6EB9-4667-AE65-9E24A8488390}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Filuet.Hardware.Dispenser", "ExpoExtractor\Filuet.Hardware.Dispenser.csproj", "{1665FAFF-6EB9-4667-AE65-9E24A8488390}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
