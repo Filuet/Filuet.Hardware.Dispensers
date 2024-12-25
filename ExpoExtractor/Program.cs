@@ -1,4 +1,4 @@
-using ExpoExtractor;
+using Filuet.Hardware.Dispenser;
 using Filuet.Hardware.Dispensers.Abstractions;
 using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Filuet.Hardware.Dispensers.Core;
@@ -25,11 +25,10 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddLogging();
-string planogramAddress = "C:/Filuet/Dispensing/test_planogram.json";
 
-Pog planogram = Pog.Read(File.ReadAllText(planogramAddress));
-builder.Services.AddSingleton(planogram)
+string planogramAddress = builder.Configuration["PlanogramPath"];
+
+builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress)))
     .AddSingleton<IMemoryCachingService, MemoryCachingService>()
     .AddVendingMachine(sp => {
         ICollection<ILightEmitter> integratedEmitters = new List<ILightEmitter>();
@@ -38,7 +37,7 @@ builder.Services.AddSingleton(planogram)
                 string jsonSettings = File.ReadAllText("C:/Filuet/Dispensing/dispensing_settings.json");
                 var machineSettings = JsonSerializer.Deserialize<IEnumerable<VisionEsPlusSettings>>(jsonSettings);
                 List<IDispenser> result = new List<IDispenser>();
-                
+
                 foreach (var settings in machineSettings) {
                     ICommunicationChannel channel = settings.IpOrSerialAddress.Contains("COM") ?
                         new EspSerialChannel(s => { s.PortName = settings.IpOrSerialAddress; }) :

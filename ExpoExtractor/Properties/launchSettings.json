@@ -9,7 +9,7 @@
     }
   },
   "profiles": {
-    "ExpoExtractor": {
+    "Filuet.Hardware.Dispenser": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
