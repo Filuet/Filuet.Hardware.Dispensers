@@ -85,6 +85,7 @@ namespace PoC
                         })
                         .AddLightEmitters(() => integratedEmitters)
                         .AddPlanogram(sp.GetRequiredService<Pog>())
+                        .AddLogger(sp.GetRequiredService<ILogger<VendingMachine>>())
                         .Build();
 
                     vendingMachine.onDispensing += (sender, e) => form.Log(LogLevel.Information, e.ToString(), e.sessionId);
