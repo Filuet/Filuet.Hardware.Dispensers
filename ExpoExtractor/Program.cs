@@ -16,6 +16,7 @@ using System.Net;
 using System.Text.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 string planogramAddress = builder.Configuration["PlanogramPath"];
+string kioskCredentialPath = builder.Configuration["KioskCredentialPath"];
 
 builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress)))
     .AddSingleton<IMemoryCachingService, MemoryCachingService>()
@@ -60,9 +62,36 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = $"{e.address} Dispensing started" };
             Console.WriteLine($"{e.address} Dispensing started");
         };
-        vendingMachine.onDispensed += (sender, e) => {
+        vendingMachine.onDispensed += async (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = $"{e.address} Dispensing completed. You can carry on with dispensing" };
             Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
+            string jsonKeys = File.ReadAllText(kioskCredentialPath);
+            Dictionary<string, string> kioskData = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonKeys);
+            string planogramApiUrl = builder.Configuration["PlanogramDatabaseUpdateUrl"];
+            Planogram planogram = new Planogram();
+
+            string[] parts = e.address.Split('/');
+            planogram.MachineId = int.Parse(parts[0]);
+            planogram.TrayId = int.Parse(parts[1]);
+            planogram.BeltId = int.Parse(parts[2]);
+            planogram.KioskName = kioskData["KioskName"];
+            planogram.ClientName = kioskData["ClientName"];
+            string planogramData = JsonSerializer.Serialize(planogram);
+
+            using (HttpClient httpClient = new HttpClient())
+            {
+                StringContent content = new StringContent(planogramData, System.Text.Encoding.UTF8, "application/json");
+                var response = await httpClient.PutAsync(planogramApiUrl, content);
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"API Response: {responseBody}");
+                }
+                else
+                {
+                    Console.WriteLine($"API call failed with status code: {response.StatusCode}");
+                }
+            }
         };
         vendingMachine.onAbandonment += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" };
