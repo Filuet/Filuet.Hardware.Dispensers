@@ -14,13 +14,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.Json;
-using System.Linq;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("C://Filuet//DispenserLogs//log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
