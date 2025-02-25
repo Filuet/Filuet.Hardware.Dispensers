@@ -20,13 +20,15 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
     .WriteTo.File("C://Filuet//DispenserLogs//log-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.AzureBlobStorage(
+        connectionString: builder.Configuration["AzureBlobConnectionString"],
+        storageContainerName: "expoextractor-logs",
+        storageFileName: $"log-{DateTime.UtcNow.ToString("yyyy-MM-dd")}.txt")
     .CreateLogger();
-
-
-
 builder.Host.UseSerilog();
-
+builder.Logging.AddSerilog();
 // Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
