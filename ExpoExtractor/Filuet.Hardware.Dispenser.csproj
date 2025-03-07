@@ -1,24 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Serilog" Version="4.2.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-    <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
-    <PackageReference Include="Serilog.Sinks.AzureBlobStorage" Version="4.0.5" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Serilog" Version="4.2.0" />
+		<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+		<PackageReference Include="Serilog.Sinks.AzureBlobStorage" Version="4.0.5" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj" />
-    <ProjectReference Include="..\Core\Filuet.Hardware.Dispensers.Core.csproj" />
-    <ProjectReference Include="..\Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Abstractions\Filuet.Hardware.Dispensers.Abstractions.csproj" />
+		<ProjectReference Include="..\Core\Filuet.Hardware.Dispensers.Core.csproj" />
+		<ProjectReference Include="..\Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="Certificate\vendingmachine.pfx">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>
