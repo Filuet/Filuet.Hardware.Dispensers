@@ -22,6 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
+    .WriteTo.Console(outputTemplate: "{HH:mm:ss.fff zzz} [{Level:u}] [{SourceContext}] {Message}{NewLine}{Exception}")
     .WriteTo.File(builder.Configuration["LocalDispenserLogsPath"], rollingInterval: RollingInterval.Day)
     .WriteTo.AzureBlobStorage(
         connectionString: builder.Configuration["AzureBlobConnectionString"],
