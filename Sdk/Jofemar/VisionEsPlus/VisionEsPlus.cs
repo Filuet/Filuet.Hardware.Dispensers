@@ -156,7 +156,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             cart = await DispenseSessionAsync(cart); // run #1
             if (cart.Items.Any())
                 cart = await DispenseSessionAsync(cart); // run #2. JIC
-            ChangeLight(false); // turn off lights
+            //ChangeLight(false); // turn off lights
+
 
             return cart;
         }

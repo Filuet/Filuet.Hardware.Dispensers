@@ -21,6 +21,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         event EventHandler<LightEmitterEventArgs> onLightsChanged;
         event EventHandler<UnlockEventArgs> onMachineUnlocked;
+        event EventHandler<VendingMachineTestEventArgs> onDispensingCompleted;
         event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
 
         Task DispenseAsync(Cart cart);
