@@ -78,6 +78,16 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
             Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
             logger.LogInformation($"{e.address} Dispensing completed. You can carry on with dispensing");
         };
+
+        vendingMachine.onDispensedFromUnit += (sender, e) => {
+            // dispensing finished from e.Dispenser.Id
+            Console.WriteLine($"Dispensing from unit #{e.Dispenser.Id} finished");
+        };
+
+        vendingMachine.onDispensingFinished += (sender, e) => {
+            StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
+        };
+
         vendingMachine.onAbandonment += (sender, e) => {
             StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" };
             Console.WriteLine($"Likely that products were abandoned {e}");
@@ -109,10 +119,6 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
             StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" };
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
             logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
-        };
-
-        vendingMachine.onDispensingCompleted += (sender, e) => {
-            StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
         };
 
         vendingMachine.onPlanogramClarification += (sender, e) => {

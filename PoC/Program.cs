@@ -100,7 +100,7 @@ namespace PoC
                         e.planogram.Write(planogram_path);
                     };
                     vendingMachine.onAddressInactive += (sender, e) => form.Log(LogLevel.Warning, e.ToString(), e.sessionId);
-                    vendingMachine.onDispensingCompleted += (sender, e) => form.Log(LogLevel.Information, e.ToString(), string.Empty);
+                    vendingMachine.onDispensedFromUnit += (sender, e) => form.Log(LogLevel.Information, e.ToString(), string.Empty);
 
                     // vendingMachine.onTest += (sender, e) => form.Log(Microsoft.IdentityModel.Clients.ActiveDirectory.LogLevel.Information, e.Message);
                     ////vendingMachine.onResponse += (sender, e) => Console.WriteLine($"{sender}: {e}");

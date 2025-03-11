@@ -24,8 +24,9 @@ namespace Filuet.Hardware.Dispensers.Core
         public event EventHandler<PlanogramEventArgs> onPlanogramClarification;
         public event EventHandler<LightEmitterEventArgs> onLightsChanged;
         public event EventHandler<UnlockEventArgs> onMachineUnlocked;
-        public event EventHandler<VendingMachineTestEventArgs> onDispensingCompleted;
+        public event EventHandler<VendingMachineTestEventArgs> onDispensedFromUnit;
         public event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
+        public event EventHandler<EventArgs> onDispensingFinished;
 
         internal VendingMachine(IEnumerable<IDispenser> dispensers,
             IEnumerable<ILightEmitter> lightEmitters,
@@ -171,11 +172,14 @@ namespace Filuet.Hardware.Dispensers.Core
 
                 foreach (var x in dispenserRank.OrderByDescending(x => x.qty)) {
                     cart = await x.dispenser.DispenseAsync(cart);
-                    onDispensingCompleted?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = x.dispenser, Message = "Ready to go", Severity = Abstractions.Enums.DispenserStateSeverity.Normal });
+                    onDispensedFromUnit?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = x.dispenser, Message = "Ready to go", Severity = Abstractions.Enums.DispenserStateSeverity.Normal });
                 }
             }
             catch (InvalidOperationException ex) {
                 onFailed?.Invoke(this, new DispensingFailedEventArgs { message = ex.Message });
+            }
+            finally {
+                onDispensingFinished?.Invoke(this, null);
             }
         }
 
