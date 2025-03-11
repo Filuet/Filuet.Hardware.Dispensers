@@ -69,12 +69,12 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
             .Build();
 
         vendingMachine.onDispensing += (sender, e) => {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = $"{e.address} Dispensing started" };
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = e.message };
             Console.WriteLine($"{e.address} Dispensing started");
             logger.LogInformation($"{e.address} Dispensing started");
         };
         vendingMachine.onDispensed += (sender, e) => {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = $"{e.address} Dispensing completed. You can carry on with dispensing" };
+            StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = e.message };
             Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
             logger.LogInformation($"{e.address} Dispensing completed. You can carry on with dispensing");
         };

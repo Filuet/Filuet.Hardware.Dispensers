@@ -255,7 +255,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                 addedWeight += productWeight;
                 bool sendVEND = addedWeight + nextProductWeigth > _settings.MaxExtractWeightPerTime || isTheVeryLastProduct; // Send VEND command if the last product to dispense or max weight threshold reached
 
-                onDispensing?.Invoke(this, AddressEventArgs.DispensingStarted(slot.Address, cart.SessionId)); // notify about dispensing product started
+                onDispensing?.Invoke(this, AddressEventArgs.DispensingStarted(slot.Address, cart.SessionId, slot.Sku)); // notify about dispensing product started
                 state = null;
                 Dispense(slot.Address, sendVEND);
 
@@ -291,7 +291,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
-                            var de = AddressEventArgs.DispensingFinished(slot.Address, cart.SessionId);
+                            var de = AddressEventArgs.DispensingFinished(slot.Address, cart.SessionId, slot.Sku);
                             droppedIntoTheElevatorProducts.Add(de);
                             onDispensed?.Invoke(this, de);
                             cart.RemoveDispensed(slot.Sku); // remove dispensed item
