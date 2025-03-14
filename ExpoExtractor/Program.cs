@@ -17,6 +17,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
@@ -43,7 +44,12 @@ builder.Services.AddSwaggerGen();
 
 string planogramAddress = builder.Configuration["PlanogramPath"];
 ILogger<Program> logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress)))
+
+
+builder.Services.AddSingleton(sp =>
+    new PlanogramService(sp.GetRequiredService<IConfiguration>(), sp, sp.GetRequiredService<ILogger<PlanogramService>>())
+);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().GetPlanogram())
     .AddSingleton<IMemoryCachingService, MemoryCachingService>()
     .AddVendingMachine(sp =>
     {
@@ -71,7 +77,7 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
                 return result;
             })
             .AddLightEmitters(() => integratedEmitters)
-            .AddPlanogram(sp.GetRequiredService<Pog>())
+            .AddPlanogram(sp.GetRequiredService<PlanogramService>().GetPlanogram())
             .AddLogger(sp.GetRequiredService<ILogger<VendingMachine>>())
             .Build();
 
@@ -91,6 +97,7 @@ builder.Services.AddTransient(sp => Pog.Read(File.ReadAllText(planogramAddress))
         vendingMachine.onDispensedFromUnit += (sender, e) =>
         {
             // dispensing finished from e.Dispenser.Id
+            StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = $"Dispensing from unit #{e.Dispenser.Id} finished" };
             Console.WriteLine($"Dispensing from unit #{e.Dispenser.Id} finished");
         };
 

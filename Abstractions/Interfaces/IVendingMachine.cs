@@ -24,7 +24,7 @@ namespace Filuet.Hardware.Dispensers.Abstractions
         event EventHandler<VendingMachineTestEventArgs> onDispensedFromUnit;
         event EventHandler<EventArgs> onDispensingFinished;
         event EventHandler<IEnumerable<AddressEventArgs>> onWaitingProductsToBeRemoved;
-
+        void UpdatePlanogram(Pog newPlanogram);
         Task DispenseAsync(Cart cart);
         void Unlock(params int[] machines);
         Task TestAsync();

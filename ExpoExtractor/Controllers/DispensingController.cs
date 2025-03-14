@@ -3,6 +3,7 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,12 @@ namespace Filuet.Hardware.Dispenser.Controllers
     [ApiController]
     [Route("dispensing")]
     public class DispensingController : ControllerBase {
-        public DispensingController(IVendingMachine vendingMachine, Pog planogram, IConfiguration configuration, ILogger<DispensingController> logger) {
+        public DispensingController(IVendingMachine vendingMachine, Pog planogram, IConfiguration configuration, ILogger<DispensingController> logger, PlanogramService planogramService) {
             _vendingMachine = vendingMachine;
             _planogram = planogram;
             _configuration = configuration;
             _logger = logger;
+            _planogramService = planogramService;
             _vendingMachine.onTest += (sender, e) => {
                 if (_message == null)
                     _message = new List<MachineTestResult>();
@@ -113,11 +115,42 @@ namespace Filuet.Hardware.Dispenser.Controllers
 
             return Ok();
         }
+        [HttpPost("update-planogram")]
+        public IActionResult UpdateWholePlanogram([FromBody] List<PogProduct> updatedProducts)
+        {
+            if (updatedProducts == null || updatedProducts.Count == 0)
+            {
+                _logger.LogWarning("Received empty or invalid planogram update request.");
+                return BadRequest("Invalid planogram data. Must be a non-empty list.");
+            }
+
+            try
+            {
+                // Load the existing planogram
+                Pog updatedPlanogram = _planogramService.GetPlanogram();
+
+                // Replace products in the planogram
+                updatedPlanogram.Products = updatedProducts;
+
+                // Save and update planogram
+                _planogramService.UpdatePlanogram(updatedPlanogram);
+
+                _logger.LogInformation("Planogram updated successfully.");
+                return Ok("Planogram updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating planogram: {ex.Message}");
+                return StatusCode(500, "An error occurred while updating the planogram.");
+            }
+        }
+
 
         private readonly IVendingMachine _vendingMachine;
         private readonly IConfiguration _configuration;
         private readonly Pog _planogram;
         private List<MachineTestResult> _message;
         private readonly ILogger<DispensingController> _logger;
+        private readonly PlanogramService _planogramService;
     }
 }

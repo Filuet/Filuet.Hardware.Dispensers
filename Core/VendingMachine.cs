@@ -146,6 +146,17 @@ namespace Filuet.Hardware.Dispensers.Core
             // Let's spare some time and don't ping routes
             // PingRoutesAsync(_dispensers.Select(x => x.Id).ToArray()).ConfigureAwait(false);
         }
+        public void UpdatePlanogram(Pog newPlanogram)
+        {
+            if (newPlanogram == null)
+            {
+                _logger.LogWarning("Attempted to update VendingMachine with a null planogram.");
+                return;
+            }
+
+            _planogram = newPlanogram;
+            _logger.LogInformation("VendingMachine planogram updated successfully.");
+        }
 
         public async Task DispenseAsync(Cart cart) {
             try {
@@ -165,7 +176,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 }
 
                 if (!dispenserRank.Any()) {
-                    string errorMessage = "No products found to dispense";
+                    string errorMessage = $"No products found to dispense. Dispenser might be inoperable";
                     onFailed?.Invoke(this, new DispensingFailedEventArgs { message = errorMessage });
                     _logger.LogError(errorMessage);
                 }
@@ -235,7 +246,7 @@ namespace Filuet.Hardware.Dispensers.Core
 
         internal readonly IEnumerable<IDispenser> _dispensers;
         internal readonly IEnumerable<ILightEmitter> _lightEmitters;
-        internal readonly Pog _planogram;
+        internal Pog _planogram;
         private readonly ILogger<VendingMachine> _logger;
     }
 }
