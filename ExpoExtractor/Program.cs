@@ -27,7 +27,7 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File(
         path: builder.Configuration["LocalDispenserLogsPath"],
         rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} IST [{Level:u}] [{SourceContext}] {Message}{NewLine}{Exception}"
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u}] [{SourceContext}] {Message}{NewLine}{Exception}"
     )
     .WriteTo.AzureBlobStorage(
         connectionString: builder.Configuration["AzureBlobConnectionString"],
