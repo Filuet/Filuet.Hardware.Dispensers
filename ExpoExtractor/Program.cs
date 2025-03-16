@@ -108,7 +108,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onAbandonment += (sender, e) =>
         {
-            StatusSingleton.AddStatus(new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" });
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() });
             Console.WriteLine($"Likely that products were abandoned {e}");
             logger.LogInformation($"Likely that products were abandoned {e}");
 
@@ -139,7 +139,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) =>
         {
-            StatusSingleton.AddStatus(new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" });
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed for sku:" });
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
             logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
         };

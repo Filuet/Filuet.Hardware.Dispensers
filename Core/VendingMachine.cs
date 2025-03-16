@@ -60,7 +60,7 @@ namespace Filuet.Hardware.Dispensers.Core
 
                     string planogramComment = $"dispensed from {r.Address}";
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
-                    _logger.LogError(planogramComment);
+                    _logger.LogInformation(planogramComment);
 
                     onDispensed?.Invoke(sender, e);
                     _logger.LogInformation($"{e.sessionId} {e.address} dispensed");
