@@ -31,7 +31,7 @@ namespace Filuet.Hardware.Dispenser
 
         public static CurrentStatus GetLatestStatus()
         {
-            if (_statusQueue.TryDequeue(out var status) && !string.IsNullOrWhiteSpace(status?.Status))
+            if (_statusQueue.TryDequeue(out var status))
             {
                 return status;
             }

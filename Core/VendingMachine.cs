@@ -84,7 +84,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
                     _logger.LogError(planogramComment);
                 };
-
+                
                 d.onReset += (sender, e) => {
                     _logger.LogInformation($"{e.MachineId} reset invoked");
                     // Check routes right after reset. It can be that some routes have been enabled/disabled recently
@@ -96,6 +96,10 @@ namespace Filuet.Hardware.Dispensers.Core
 
                     foreach (var i in e)
                         _logger.LogInformation($"{i.sessionId} An item from {i.address} ready to be taken");
+                };
+                d.onFailedToDispense += (sender, e) =>
+                {
+                    _logger.LogInformation($"{e.sessionId} skus: {string.Join(',', e.ProductsNotGivenFromAddresses.Keys)}, with quantity/s: {string.Join(',', e.ProductsNotGivenFromAddresses.Values)} could have been failed!");
                 };
 
                 d.onAddressUnavailable += (sender, e) => {
@@ -114,7 +118,7 @@ namespace Filuet.Hardware.Dispensers.Core
 
                         if (formerQty != 0) {
                             planogramComment = $"{e.address} is empty and blocked. Qty changed: {formerQty}→0";
-                            errorMessage = "Can't dispense from empty address";
+                            errorMessage = "Empty belt address found";
                         }
                     }
                     else {
@@ -123,12 +127,12 @@ namespace Filuet.Hardware.Dispensers.Core
 
                         if (!formerValue.HasValue || formerValue.Value) {
                             planogramComment = $"{e.address} is inactive and disabled";
-                            errorMessage = "Dispensing failed- address is inactive";
+                            errorMessage = "address is inactive and disabled";
                         }
                     }
 
                     _logger.LogError($"{e.sessionId} {e.address} {errorMessage}");
-                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = errorMessage, sessionId = e.sessionId });
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = errorMessage, sessionId = e.sessionId, Sku = e.Sku });
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
                     _logger.LogError(planogramComment);
                 };
@@ -177,7 +181,7 @@ namespace Filuet.Hardware.Dispensers.Core
 
                 if (!dispenserRank.Any()) {
                     string errorMessage = $"No products found to dispense. Dispenser might be inoperable";
-                    onFailed?.Invoke(this, new DispensingFailedEventArgs { message = errorMessage });
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { message = errorMessage, Sku = string.Join(",", cart.Products)});
                     _logger.LogError(errorMessage);
                 }
 
