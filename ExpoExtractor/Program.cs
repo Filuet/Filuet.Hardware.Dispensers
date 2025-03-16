@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
@@ -139,7 +140,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) =>
         {
-            StatusSingleton.AddStatus(new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed for sku:" });
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"{string.Join(';', e.Select(x=> x.message))})" });
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
             logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
         };
