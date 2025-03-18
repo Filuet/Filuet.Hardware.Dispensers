@@ -106,7 +106,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     PogRoute route = _planogram.GetRoute(e.address);
                     bool? formerValue = route.Active;
                     int formerQty = route.Quantity;
-
+                    PogProduct product = _planogram[e.address];
                     string planogramComment = null;
                     string errorMessage = null;
 
@@ -132,7 +132,7 @@ namespace Filuet.Hardware.Dispensers.Core
                     }
 
                     _logger.LogError($"{e.sessionId} {e.address} {errorMessage}");
-                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = errorMessage, sessionId = e.sessionId, Sku = e.Sku });
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, emptyBelt = e.emptyBelt, message = errorMessage, sessionId = e.sessionId, Sku = product.Product });
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
                     _logger.LogError(planogramComment);
                 };
