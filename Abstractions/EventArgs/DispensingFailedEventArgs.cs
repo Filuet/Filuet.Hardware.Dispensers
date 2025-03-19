@@ -11,6 +11,6 @@
         public string message { get; set; }
 
         public override string ToString()
-            => $"{(string.IsNullOrWhiteSpace(address) ? string.Empty : $"[{address}] ")}{GetType().Name}: Reason:${message} for sku:{(string.IsNullOrWhiteSpace(Sku) ? string.Empty : Sku.Trim())}";
+            => $"{(string.IsNullOrWhiteSpace(address) ? string.Empty : $"[{address}] ")}{GetType().Name}: Reason:{message} for sku:{(string.IsNullOrWhiteSpace(Sku) ? string.Empty : Sku.Trim())}";
     }
 }

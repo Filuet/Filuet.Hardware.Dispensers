@@ -73,13 +73,15 @@ namespace Filuet.Hardware.Dispensers.Core
 
                 d.onAddressInactive += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
+                    PogProduct product = _planogram[e.address];
                     _planogram.SetAttributes(e.address, false);
                     if (route.MockedActive.HasValue) // emulation
                         route.MockedActive = false;
 
                     _logger.LogWarning($"{e.sessionId} {e.address} inactive and disabled");
                     onAddressInactive?.Invoke(this, new AddressEventArgs { message = "Address's inactive and disabled", address = e.address, sessionId = e.sessionId });
-
+                    
+                    onFailed?.Invoke(this, new DispensingFailedEventArgs { address = e.address, message = "Address is inactive and disabled", sessionId = e.sessionId, Sku = product.Product });
                     string planogramComment = $"{e.address} is inactive and disabled";
                     onPlanogramClarification?.Invoke(this, new PlanogramEventArgs { planogram = _planogram, comment = planogramComment, machineId = d.Id, sessionId = e.sessionId });
                     _logger.LogError(planogramComment);
@@ -101,7 +103,7 @@ namespace Filuet.Hardware.Dispensers.Core
                 {
                     _logger.LogInformation($"{e.sessionId} skus: {string.Join(',', e.ProductsNotGivenFromAddresses.Keys)}, with quantity/s: {string.Join(',', e.ProductsNotGivenFromAddresses.Values)} could have been failed!");
                 };
-
+                //when product not found on the belt
                 d.onAddressUnavailable += (sender, e) => {
                     PogRoute route = _planogram.GetRoute(e.address);
                     bool? formerValue = route.Active;
