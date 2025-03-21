@@ -329,7 +329,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                         else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) {
                                             // Looks like the customer has forgotten to pick up the products. At least they're in the elevator so far
                                             foreach (var p in droppedIntoTheElevatorProducts)
-                                                onAbandonment?.Invoke(this, p);
+                                                onAbandonment?.Invoke(this, AddressEventArgs.Abandonment(p.address, p.sessionId, p.sessionId));
 
                                             droppedIntoTheElevatorProducts.Clear(); // Consider the products as disputable, but as for now forget them
                                         }

@@ -3,7 +3,6 @@ using Filuet.Hardware.Dispensers.Abstractions.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +13,17 @@ namespace Filuet.Hardware.Dispenser.Controllers
 {
     [ApiController]
     [Route("dispensing")]
-    public class DispensingController : ControllerBase {
-        public DispensingController(IVendingMachine vendingMachine, Pog planogram, IConfiguration configuration, ILogger<DispensingController> logger, PlanogramService planogramService) {
+    public class DispensingController : ControllerBase
+    {
+        public DispensingController(IVendingMachine vendingMachine, Pog planogram, IConfiguration configuration, ILogger<DispensingController> logger, PlanogramService planogramService)
+        {
             _vendingMachine = vendingMachine;
             _planogram = planogram;
             _configuration = configuration;
             _logger = logger;
             _planogramService = planogramService;
-            _vendingMachine.onTest += (sender, e) => {
+            _vendingMachine.onTest += (sender, e) =>
+            {
                 if (_message == null)
                     _message = new List<MachineTestResult>();
 
@@ -32,48 +34,53 @@ namespace Filuet.Hardware.Dispenser.Controllers
 
         [HttpPost("extract")]
         public async Task Extract(IEnumerable<ExtractSlot> toDispense)
-            => await _vendingMachine.DispenseAsync(new Cart(toDispense.Select(x => new CartItem { Sku = x.Sku, Quantity = x.Quantity })));
+        {
+            StatusSingleton.ClearStatuses();
+            await _vendingMachine.DispenseAsync(new Cart(toDispense.Select(x => new CartItem { Sku = x.Sku, Quantity = x.Quantity })));
+        }
 
         [HttpGet("status")]
-        public IActionResult Status() {
-            if (StatusSingleton.Status != null)
+        public IActionResult Status()
+        {
+            var status = StatusSingleton.GetLatestStatus();
+            if (status != null)
             {
-                Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {StatusSingleton.Status.Action}");
-                _logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {StatusSingleton.Status.Action}");
-            }
-                
-
-
-            if (StatusSingleton.Status == null || string.IsNullOrWhiteSpace(StatusSingleton.Status.Status))
-                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
-
-            string result = JsonSerializer.Serialize(StatusSingleton.Status);
-
-            if ((StatusSingleton.Status.Action == "dispensing" || StatusSingleton.Status.Action == "takeproducts") && StatusSingleton.Status.Status == "success")
-                return Ok(result);
-
-            if (StatusSingleton.Status.Action == "dispensed") {
-                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
-                return Ok(result);
+                Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {status.Action}");
+                _logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Status requested. Current status is {status.Action}");
             }
 
-            if (StatusSingleton.Status.Action != "pending")
-                StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
-
+            string result = JsonSerializer.Serialize(status);
             return Ok(result);
         }
 
+        [HttpGet("all-statuses")]
+        public IActionResult AllStatuses()
+        {
+            var statuses = StatusSingleton.GetAllStatuses();
+            string result = JsonSerializer.Serialize(statuses);
+            return Ok(result);
+        }
+
+        [HttpPost("reset-status")]
+        public IActionResult ResetStatus()
+        {
+            StatusSingleton.ClearStatuses();
+            _logger.LogInformation("Status has been reset to default.");
+            return Ok("Status has been reset to default.");
+        }
 
         [HttpGet("stock")]
         public IEnumerable<ProductStock> Stock()
-            => _planogram.Products.Select(x => new ProductStock {
+            => _planogram.Products.Select(x => new ProductStock
+            {
                 Sku = x.Product,
                 Quantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.Quantity).Sum(),
                 MaxQuantity = x.Routes.Where(r => r.Active.HasValue && r.Active.Value).Select(r => (int)r.MaxQuantity).Sum(),
             });
 
         [HttpGet("test")]
-        public async Task<IEnumerable<MachineTestResult>> Test() {
+        public async Task<IEnumerable<MachineTestResult>> Test()
+        {
             _message = new List<MachineTestResult>();
             await _vendingMachine.TestAsync();
 
@@ -85,13 +92,16 @@ namespace Filuet.Hardware.Dispenser.Controllers
             => _vendingMachine.Unlock(machine);
 
         [HttpPost("planogram")]
-        public IActionResult UpdatePlanogram([FromBody] RouteUpdateRequest planogramUpdate) {
+        public IActionResult UpdatePlanogram([FromBody] RouteUpdateRequest planogramUpdate)
+        {
             if (string.IsNullOrWhiteSpace(planogramUpdate.Address))
                 return BadRequest("Address is mandatory");
 
-            if (!planogramUpdate.MaxQty.HasValue || !planogramUpdate.Qty.HasValue || !planogramUpdate.IsActive.HasValue) {
+            if (!planogramUpdate.MaxQty.HasValue || !planogramUpdate.Qty.HasValue || !planogramUpdate.IsActive.HasValue)
+            {
                 PogRoute route = _planogram.GetRoute(planogramUpdate.Address);
-                if (route != null) {
+                if (route != null)
+                {
                     planogramUpdate.Qty = planogramUpdate.Qty ?? route.Quantity;
                     planogramUpdate.MaxQty = planogramUpdate.MaxQty ?? route.MaxQuantity;
                     planogramUpdate.IsActive = planogramUpdate.IsActive ?? route.Active;
@@ -102,7 +112,8 @@ namespace Filuet.Hardware.Dispenser.Controllers
             if (planogramUpdate.Qty > planogramUpdate.MaxQty)
                 return BadRequest("Wrong max quantity");
 
-            _planogram.UpdateRoute(new PogRoute {
+            _planogram.UpdateRoute(new PogRoute
+            {
                 Active = planogramUpdate.IsActive,
                 Address = planogramUpdate.Address,
                 Quantity = (ushort)planogramUpdate.Qty.Value,
@@ -144,7 +155,6 @@ namespace Filuet.Hardware.Dispenser.Controllers
                 return StatusCode(500, "An error occurred while updating the planogram.");
             }
         }
-
 
         private readonly IVendingMachine _vendingMachine;
         private readonly IConfiguration _configuration;

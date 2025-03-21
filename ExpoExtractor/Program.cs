@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 // Configure Serilog
@@ -83,13 +84,13 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onDispensing += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "success", Message = e.message };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "dispensing", Status = "success", Message = e.message });
             Console.WriteLine($"{e.address} Dispensing started");
             logger.LogInformation($"{e.address} Dispensing started");
         };
         vendingMachine.onDispensed += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensed", Status = "success", Message = e.message };
+            StatusSingleton.AddStatus( new CurrentStatus { Action = "dispensed", Status = "success", Message = e.message });
             Console.WriteLine($"{e.address} Dispensing completed. You can carry on with dispensing");
             logger.LogInformation($"{e.address} Dispensing completed. You can carry on with dispensing");
         };
@@ -97,25 +98,25 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
         vendingMachine.onDispensedFromUnit += (sender, e) =>
         {
             // dispensing finished from e.Dispenser.Id
-            StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = $"Dispensing from unit #{e.Dispenser.Id} finished" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "pending", Status = "success", Message = $"Dispensing from unit #{e.Dispenser.Id} finished" });
             Console.WriteLine($"Dispensing from unit #{e.Dispenser.Id} finished");
         };
 
         vendingMachine.onDispensingFinished += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "pending", Status = "success", Message = "Waiting for command" });
         };
 
         vendingMachine.onAbandonment += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = $"Likely that products were abandoned {e}" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() });
             Console.WriteLine($"Likely that products were abandoned {e}");
             logger.LogInformation($"Likely that products were abandoned {e}");
 
         };
         vendingMachine.onFailed += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "dispensing", Status = "failed", Message = e.ToString() });
             Console.WriteLine(e.ToString());
             logger.LogInformation(e.ToString());
 
@@ -123,7 +124,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onLightsChanged += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "lights", Status = "success", Message = $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "lights", Status = "success", Message = $"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}" });
             Console.WriteLine($"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
             logger.LogInformation($"Machine {e.Id} Lights are {(e.IsOn ? "On" : "Off")}");
 
@@ -131,7 +132,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onMachineUnlocked += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "unlock", Status = "success", Message = $"{e.machine} is unlocked" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "unlock", Status = "success", Message = $"{e.machine} is unlocked" });
             Console.WriteLine($"{e.machine} is unlocked");
             logger.LogInformation($"{e.machine} is unlocked");
 
@@ -139,7 +140,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<PlanogramService>().Ge
 
         vendingMachine.onWaitingProductsToBeRemoved += (sender, e) =>
         {
-            StatusSingleton.Status = new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"Dispenser is waiting for products to be removed" };
+            StatusSingleton.AddStatus(new CurrentStatus { Action = "takeproducts", Status = "success", Message = $"{string.Join(';', e.Select(x=> x.message))})" });
             Console.WriteLine($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
             logger.LogInformation($"{DateTime.Now:HH:mm:ss}: Dispenser is waiting for products to be removed");
         };

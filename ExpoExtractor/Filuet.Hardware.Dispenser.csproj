@@ -21,4 +21,10 @@
 		<ProjectReference Include="..\Sdk\Jofemar\VisionEsPlus\Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Certificate\vendingmachine.pfx">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
