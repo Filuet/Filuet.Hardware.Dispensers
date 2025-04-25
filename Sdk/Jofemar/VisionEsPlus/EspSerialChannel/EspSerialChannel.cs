@@ -44,6 +44,8 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus.Communication
                     break;
             }
 
+            _port.Close();
+
             return bytes.ToArray();
         }
 
