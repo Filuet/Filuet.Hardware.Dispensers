@@ -142,6 +142,7 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                 default:
                                     return (DispenserStateSeverity.Inoperable, code, "inoperable");
                             }
+
                     }
                 }));
         }
@@ -286,8 +287,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                             }
                         }
                     }
-                    catch (SocketException) { }
-                    catch (Exception ex) { }
+                    catch (SocketException socketEx) {
+                        LogError($"SocketException in DispenseSessionAsync for Machine {Id}: {socketEx.Message}", socketEx);
+                    }
+                    catch (Exception ex) {
+                        LogError($"Exception in DispenseSessionAsync for Machine {Id}: {ex.Message}", ex);
+                    }
 
                     switch (state?.state) {
                         case DispenserStateSeverity.Normal: // the product was extracted from the belt to the elevator successfully
@@ -314,13 +319,17 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
 
                                         while ((state == null ||
                                             state.Value.state == DispenserStateSeverity.Inoperable ||
-                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 60) {
+                                            state.Value.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) && sw1.Elapsed.TotalSeconds < 114) {
                                             try {
                                                 Thread.Sleep(3000);
                                                 state = await StatusAsync(); // Wait for the next not empty state 
                                             }
-                                            catch (SocketException) { }
-                                            catch (Exception ex) { }
+                                            catch (SocketException socketEx) {
+                                                LogError($"SocketException in WaitingForProductToBeRemoved loop for Machine {Id}: {socketEx.Message}", socketEx);
+                                            }
+                                            catch (Exception ex) {
+                                                LogError($"Exception in WaitingForProductToBeRemoved loop for Machine {Id}: {ex.Message}", ex);
+                                            }
                                         }
                                         sw1.Stop();
 
@@ -578,7 +587,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     onDataMoving?.Invoke(this, (true, message, _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotiatorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
-                catch (SocketException) { }
+                catch (SocketException socketEx) {
+                    LogError($"SocketException in runCommand for Machine {Id}, Command: {message} - {socketEx.Message}", socketEx);
+                }
+                catch (Exception ex) {
+                    LogError($"Exception in runCommand for Machine {Id}, Command: {message} - {ex.Message}", ex);
+                }
 
                 VisionEsPlusResponseCodes code = ParseResponse(response);
 
@@ -596,7 +610,12 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                     onDataMoving?.Invoke(this, (true, message, _bitConvert(command))); // Send telemetry to subscribers via DispenserNegotialorLogger
                     response = _channel.SendCommand(command); // Send command to the device
                 }
-                catch (SocketException) { }
+                catch (SocketException socketEx) {
+                    LogError($"SocketException in ExecuteCommand for Machine {Id}, Command: {message} - {socketEx.Message}", socketEx);
+                }
+                catch (Exception ex) {
+                    LogError($"Exception in ExecuteCommand for Machine {Id}, Command: {message} - {ex.Message}", ex);
+                }
 
                 VisionEsPlusResponseCodes code = ParseResponse(response);
 
@@ -606,7 +625,23 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
             }
         }
 
-        private string _bitConvert(byte[] data) => BitConverter.ToString(data).Replace('-', ' ');
+        /// <summary>
+        /// Log error messages through the onDataMoving event for consistency with existing logging pattern
+        /// </summary>
+        /// <param name="message">Error message</param>
+        /// <param name="exception">Exception object</param>
+        private void LogError(string message, Exception exception = null) {
+            string logMessage = exception != null 
+                ? $"ERROR: {message} | StackTrace: {exception.StackTrace}"
+                : $"ERROR: {message}";
+            
+            // Use onDataMoving event to log errors so they appear in the existing logging infrastructure
+            onDataMoving?.Invoke(this, (false, "ERROR", logMessage));
+            
+           
+        }
+
+        private string _bitConvert(byte[] data) => data != null ? BitConverter.ToString(data).Replace('-', ' ') : "NULL";
 
         /// <summary>
         /// Fetch current planogram

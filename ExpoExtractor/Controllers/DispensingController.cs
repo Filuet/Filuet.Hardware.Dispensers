@@ -26,7 +26,12 @@ namespace Filuet.Hardware.Dispenser.Controllers
             {
                 if (_message == null)
                     _message = new List<MachineTestResult>();
-
+                if (e.Dispenser == null)
+                {
+                    _logger.LogError("Received onTest event with null Dispenser. Sender: {Sender}, Message: {Message}, Severity: {Severity}", 
+                        sender?.GetType()?.Name ?? "null", e?.Message ?? "null", e?.Severity.ToString() ?? "null");
+                    return;
+                }
                 _message.RemoveAll(x => x.Machine == e.Dispenser.Id);
                 _message.Add(new MachineTestResult { Machine = e.Dispenser.Id, Status = e.Message });
             };

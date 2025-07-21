@@ -38,6 +38,8 @@ namespace Filuet.Hardware.Dispensers.Core
 
             foreach (IDispenser d in _dispensers) {
                 d.onTest += (sender, e) => {
+                    if (d == null)
+                        _logger.LogError("Dispenser reference is null in onTest handler!");
                     onTest?.Invoke(this, new VendingMachineTestEventArgs { Dispenser = d, Severity = e.Severity, Message = e.Message });
                     _logger.Log(e.Severity.ToLogLevel(), $"Dispenser {d.Id}. {e.Message}");
                 };
