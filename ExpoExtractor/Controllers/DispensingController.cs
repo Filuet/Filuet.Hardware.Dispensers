@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -22,19 +23,32 @@ namespace Filuet.Hardware.Dispenser.Controllers
             _configuration = configuration;
             _logger = logger;
             _planogramService = planogramService;
-            _vendingMachine.onTest += (sender, e) =>
+            
+            // Subscribe to the event only once in constructor
+            _vendingMachine.onTest += OnVendingMachineTest;
+        }
+
+        private void OnVendingMachineTest(object? sender, VendingMachineTestEventArgs e)
+        {
+            if (e?.Dispenser == null)
             {
-                if (_message == null)
-                    _message = new List<MachineTestResult>();
-                if (e.Dispenser == null)
+                _logger.LogError("Received onTest event with null Dispenser. Sender: {Sender}, Message: {Message}, Severity: {Severity}", 
+                    sender?.GetType()?.Name ?? "null", e?.Message ?? "null", e?.Severity.ToString() ?? "null");
+                return;
+            }
+
+            var testResult = new MachineTestResult { Machine = e.Dispenser.Id, Status = e.Message };
+            
+            // Store results in thread-safe concurrent dictionary, keyed by a unique request identifier
+            foreach (var kvp in _activeTestRequests.ToList())
+            {
+                var requestResults = kvp.Value;
+                if (requestResults != null)
                 {
-                    _logger.LogError("Received onTest event with null Dispenser. Sender: {Sender}, Message: {Message}, Severity: {Severity}", 
-                        sender?.GetType()?.Name ?? "null", e?.Message ?? "null", e?.Severity.ToString() ?? "null");
-                    return;
+                    // Remove any existing result for this machine and add the new one
+                    requestResults.AddOrUpdate(e.Dispenser.Id, testResult, (key, oldValue) => testResult);
                 }
-                _message.RemoveAll(x => x.Machine == e.Dispenser.Id);
-                _message.Add(new MachineTestResult { Machine = e.Dispenser.Id, Status = e.Message });
-            };
+            }
         }
 
         [HttpPost("extract")]
@@ -86,10 +100,26 @@ namespace Filuet.Hardware.Dispenser.Controllers
         [HttpGet("test")]
         public async Task<IEnumerable<MachineTestResult>> Test()
         {
-            _message = new List<MachineTestResult>();
-            await _vendingMachine.TestAsync();
-
-            return _message.OrderBy(x => x.Machine);
+            var requestId = Guid.NewGuid();
+            var requestResults = new ConcurrentDictionary<int, MachineTestResult>();
+            
+            // Register this request's result collection
+            _activeTestRequests[requestId] = requestResults;
+            
+            try
+            {
+                await _vendingMachine.TestAsync();
+                
+                // Wait a brief moment for all events to be processed
+                await Task.Delay(100);
+                
+                return requestResults.Values.OrderBy(x => x.Machine);
+            }
+            finally
+            {
+                // Clean up this request's result collection
+                _activeTestRequests.TryRemove(requestId, out _);
+            }
         }
 
         [HttpGet("unlock/{machine}")]
@@ -131,6 +161,7 @@ namespace Filuet.Hardware.Dispenser.Controllers
 
             return Ok();
         }
+
         [HttpPost("update-planogram")]
         public IActionResult UpdateWholePlanogram([FromBody] List<PogProduct> updatedProducts)
         {
@@ -164,8 +195,10 @@ namespace Filuet.Hardware.Dispenser.Controllers
         private readonly IVendingMachine _vendingMachine;
         private readonly IConfiguration _configuration;
         private readonly Pog _planogram;
-        private List<MachineTestResult> _message;
         private readonly ILogger<DispensingController> _logger;
         private readonly PlanogramService _planogramService;
+        
+        // Thread-safe storage for test results, keyed by request ID
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<int, MachineTestResult>> _activeTestRequests = new();
     }
 }
