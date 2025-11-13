@@ -333,18 +333,31 @@ namespace Filuet.Hardware.Dispensers.SDK.Jofemar.VisionEsPlus
                                         }
                                         sw1.Stop();
 
-                                        if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus) // The product/s was/were given
-                                            droppedIntoTheElevatorProducts.Clear(); // Consider the products as dispensed
-                                        else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved) {
-                                            // Looks like the customer has forgotten to pick up the products. At least they're in the elevator so far
+                                        // Determine elapsed waiting time
+                                        var elapsed = sw1.Elapsed.TotalSeconds;
+                                        
+                                        // Log elapsed time through onDataMoving event
+                                        onDataMoving?.Invoke(this, (false, "Elapsed Time", $"Waiting for product removal took {elapsed:F2} seconds (timeout: 114s)"));
+
+                                        // Handle different final states - treating Ready and FaultIn485Bus as the same (both mean products were taken)
+                                        if (state?.internalState == VisionEsPlusResponseCodes.Ready || state?.internalState == VisionEsPlusResponseCodes.FaultIn485Bus)
+                                        {
+                                            // Normal pickup completed - products were taken
+                                            droppedIntoTheElevatorProducts.Clear();
+                                        }
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.WaitingForProductToBeRemoved)
+                                        {
+                                            // Still waiting even after timeout → definite abandonment
                                             foreach (var p in droppedIntoTheElevatorProducts)
                                                 onAbandonment?.Invoke(this, AddressEventArgs.Abandonment(p.address, p.sessionId, _planogram[p.address].Product));
 
-                                            droppedIntoTheElevatorProducts.Clear(); // Consider the products as disputable, but as for now forget them
+                                            droppedIntoTheElevatorProducts.Clear();
                                         }
-                                        else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector) {
+                                        else if (state?.internalState == VisionEsPlusResponseCodes.FaultInProductDetector)
+                                        {
                                             // This could happen when during the descent the product fell and stopped blocking the detector or, conversely, turned over and blocked it.
                                             // This doesn't mean that the product wasn't issued
+                                            droppedIntoTheElevatorProducts.Clear();
                                         }
 
                                         break;
